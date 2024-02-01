@@ -1,21 +1,20 @@
 import os
 from pathlib import Path
 import torch
-
 from tqdm import tqdm
 from data.PokerCardDistribution import log_distributions
-
 from data.PokerDataset import data_loader_factory
-from enums.TargetType import TargetType
-from networks.PokerNetwork import PokerNetwork, PokerNetworkLog
+from enums.PokerTargetType import PLAYER_CARDS
+from networks.PokerNetwork import PokerNetwork
 from torch.utils.tensorboard import SummaryWriter
+from networks.PokerNetworkLog import PokerNetworkLog
 
 DATASET_NAME = "6_player"
-DATASET_SUBSET = [TargetType.Player_card_1, TargetType.Player_card_2]
+DATASET_SUBSET = PLAYER_CARDS
 BATCH_SIZE = 32
 EPOCHS = 350
-SAVE_NAME = "6_player_pc_dp"
-LR = 0.0007
+SAVE_NAME = "6_player_player_cards"
+LR = 0.0005
 CONV_CHANNELS = [16, 32]
 FC_LAYER = [64]
 

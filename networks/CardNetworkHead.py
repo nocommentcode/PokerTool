@@ -1,16 +1,15 @@
 from data.PokerTargetBatch import PokerTargetBatch
 from enums.Suit import Suit
-from enums.TargetType import TargetType
+from enums.PokerTargetType import PokerTargetType
 from enums.Value import Value
 import torch
 import torch.nn as nn
 from networks.CardHeadLog import CardHeadLog
 from networks.CardNetworkPrediction import CardNetworkPrediction
-from networks.NetworkHeadStep import NetworkHeadStep
 
 
 class CardNetworkHead(nn.Module):
-    def __init__(self, target_type: TargetType, dims: int, fc_layers=[256]):
+    def __init__(self, target_type: PokerTargetType, dims: int, fc_layers=[256]):
         super().__init__()
 
         self.suit_net = nn.Sequential()
@@ -39,7 +38,7 @@ class CardNetworkHead(nn.Module):
 
         return suit, value
 
-    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch) -> NetworkHeadStep:
+    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch) -> CardHeadLog:
 
         pred_suit, pred_value = self.forward(x)
         act_suit, act_value, uuids = target[self.target_type]
@@ -51,7 +50,7 @@ class CardNetworkHead(nn.Module):
         return (suit_loss+value_loss), CardHeadLog("train", suit_loss.detach().item(), value_loss.detach().item(), pred_suit, act_suit, pred_value, act_value, uuids)
 
     @torch.no_grad
-    def test_iter(self, x: torch.Tensor, target: PokerTargetBatch) -> NetworkHeadStep:
+    def test_iter(self, x: torch.Tensor, target: PokerTargetBatch) -> CardHeadLog:
         pred_suit, pred_value = self.forward(x)
         act_suit, act_value, uuids = target[self.target_type]
 

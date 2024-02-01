@@ -1,16 +1,15 @@
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as f
 
 from data.img_transformers import FINAL_DIMENSIONS
-from enums.TargetType import TargetType
 from networks import BASE_WIEGHT_DIR
 from data.img_transformers import poker_img_transformer
+from networks.GameState import GameState
 
 
-class CardDetector(nn.Module):
-    def __init__(self, input_shape=FINAL_DIMENSIONS, lr=0.001):
+class StateDetector(nn.Module):
+    def __init__(self, input_shape=FINAL_DIMENSIONS, lr=0.001, player_count=6):
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Conv2d(3, 16, 3),
@@ -41,13 +40,30 @@ class CardDetector(nn.Module):
             nn.Linear(128, 6)
         )
 
+        self.dealer_pos_fc = nn.Sequential(
+            nn.Linear(output_dim, 128),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(128, player_count)
+        )
+
+        self.num_opponents_fc = nn.Sequential(
+            nn.Linear(output_dim, 128),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(128, 64),
+            nn.Linear(64, player_count)
+        )
+
         self.optim = torch.optim.Adam(self.parameters(), lr=lr)
 
     def forward(self, x: torch.Tensor):
         encoded = self.encoder(x)
         player_cards = self.player_card_fc(encoded)
         table_cards = self.table_card_fc(encoded)
-        return player_cards, table_cards
+        dealer_pos = self.dealer_pos_fc(encoded)
+        num_opponents = self.num_opponents_fc(encoded)
+        return player_cards, table_cards, dealer_pos, num_opponents
 
     def save(self, filename: str):
         filename = os.path.join(BASE_WIEGHT_DIR, f'{filename}.pth')
@@ -56,19 +72,25 @@ class CardDetector(nn.Module):
     @staticmethod
     def load(filename: str):
         filename = os.path.join(BASE_WIEGHT_DIR, f'{filename}.pth')
-        model = CardDetector()
+        model = StateDetector()
         state_dict = torch.load(filename)
         model.load_state_dict(state_dict, assign=True)
         return model
 
-    def get_card_counts(self, screenshot):
+    def get_state(self, screenshot) -> GameState:
+        # to batch
         transformed = poker_img_transformer(screenshot)
         batch = transformed.unsqueeze(0)
         batch = batch.to(torch.float32).to("cuda")
-        player_preds, table_preds = self.forward(batch)
+
+        player_preds, table_preds, dealer_pos, num_opponents = self.forward(
+            batch)
 
         softmax = nn.Softmax(dim=1)
+
         player_count = torch.argmax(softmax(player_preds), 1)[0]
         table_count = torch.argmax(softmax(table_preds), 1)[0]
+        dealer_pos = torch.argmax(softmax(dealer_pos), 1)[0]
+        num_opponents = torch.argmax(softmax(num_opponents), 1)[0]
 
-        return player_count.item(), table_count.item()
+        return GameState(player_count.item(), table_count.item(), dealer_pos.item(), num_opponents.item())

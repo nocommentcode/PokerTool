@@ -9,12 +9,6 @@ class Position(Enum):
     SB = "sb"
     BB = "bb"
 
-    @staticmethod
-    def from_dealer_pos(dealer_pos):
-        positions = [Position.BTN, Position.SB, Position.BB,
-                     Position.UTG, Position.HJ, Position.CO]
-        return positions[dealer_pos]
-
     def __str__(self):
         return f"# {ORDERED_POSITIONS.index(self)}"
 

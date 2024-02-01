@@ -1,26 +1,25 @@
-import shutil
+import torch
+from data.img_transformers import poker_img_transformer
 import datetime
 from pathlib import Path
+from matplotlib import pyplot as plt
 from tqdm import tqdm
-from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
+from data import DATASET_DIR, UN_CLASSIFIED_DIR
 import os
 from PIL.Image import open as open_image
 from data.GGPokerHandHistory import GGPokerHandHistory
-from networks.StateDetector import StateDetector
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-STATE_DECTOR_NAME = "6_player_state_detector"
-DIR_NAME = UN_CLASSIFIED_DIR
-DIR_NAME = "images/unclassified_images_from_big_batch"
+DATASET_NAME = "6_player"
+UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
 NUM_PLAYERS = 6
 
 
-class ImageClassification:
+class StateClassification:
     def __init__(self, uuid, hands):
         self.uuid = uuid
         self.file_path = os.path.join(
-            DIR_NAME, f"{self.uuid}.png")
-
+            UNCLASSIDIED_NAME, f"{self.uuid}.png")
         self.hand = self.get_corresponding_hand(hands)
 
     def get_corresponding_hand(self, hands):
@@ -42,11 +41,12 @@ class ImageClassification:
 
         return current_hand
 
-    def save_to_classified(self, image, classification):
-        dir = Path(f"{CLASSIFIED_DIR}/{self.uuid}")
+    def save_to_dataset(self, image, classification):
+        dir = Path(f"{DATASET_DIR}/{DATASET_NAME}/{self.uuid}")
         dir.mkdir(parents=True, exist_ok=True)
 
-        image.save(f"{dir}/image.png")
+        tensor_img = poker_img_transformer(image)
+        torch.save(tensor_img, f"{dir}/image.pt")
 
         with open(f"{dir}/classification.txt", 'w') as f:
             f.write(classification)
@@ -69,39 +69,19 @@ class ImageClassification:
 
         return card_2, card_1
 
-    def get_classification(self, player_cards, table_cards):
-        classification = ""
+    def get_classification(self):
+        print(f"\n{self.hand.dealer_pos}  player_card  table_cards  num_players")
+        user_input = input("->")
+        labels = [str(self.hand.dealer_pos)] + user_input.split(" ")
+        return ",".join(labels)
 
-        sorted_player_cards = self.sort_player_cards_from_hand()
-        for i in range(2):
-            classification += ","
-            if i < player_cards:
-                card = sorted_player_cards[i]
-                classification += f"{str(card.value)}{card.suit.to_non_symbol_string()}"
-
-        for i in range(5):
-            classification += ","
-            if i < table_cards:
-                card = self.hand.table_cards[i]
-                classification += f"{str(card.value)}{card.suit.to_non_symbol_string()}"
-        classification += ","
-        classification = classification[1:]
-        return classification
-
-    def classify(self, card_detector):
+    def classify(self, plt_object):
         image = open_image(self.file_path)
+        plt_object.set_data(image)
+        plt.draw()
 
-        state = card_detector.get_state(image)
-
-        classification = self.get_classification(
-            state.player_card_count, state.table_card_count)
-        # print(
-        #     f"\nDealer: {state.dealer_pos}, Player: {state.player_card_count}, Table: {state.table_card_count}, Opponents:{state.num_opponents}")
-        # print(classification)
-        # import matplotlib.pyplot as plt
-        # plt.imshow(image)
-        # plt.show()
-        self.save_to_classified(image, classification)
+        classification = self.get_classification()
+        self.save_to_dataset(image, classification)
 
 
 def get_hand_histories():
@@ -115,30 +95,15 @@ def get_hand_histories():
 
 
 def get_image_uuids():
-    dir = Path(f"{DIR_NAME}")
+    dir = Path(f"{UNCLASSIDIED_NAME}")
     files = os.listdir(dir)
     files = [f[:-4] for f in files]
     files.sort(key=lambda x: os.path.getmtime(
-        os.path.join(DIR_NAME, f"{x}.png")))
-    return files
-
-
-def delete_all_unclassified():
-    for file in os.listdir(Path(f"{DIR_NAME}")):
-        path = Path(f"{DIR_NAME}/{file}")
-        try:
-            if os.path.isfile(path) or os.path.islink(path):
-                os.unlink(path)
-            elif os.path.isdir(path):
-                shutil.rmtree(path)
-        except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (path, e))
+        os.path.join(UNCLASSIDIED_NAME, f"{x}.png")))
+    return files[54:]
 
 
 if __name__ == "__main__":
-    card_detector = StateDetector.load(STATE_DECTOR_NAME)
-    card_detector.eval()
-
     hands = get_hand_histories()
     images = get_image_uuids()
     image_index = 0
@@ -146,18 +111,20 @@ if __name__ == "__main__":
     sucesses = 0
     failures = 0
 
+    # open plot object
+    filename = f"{UNCLASSIDIED_NAME}/{images[1]}.png"
+    plt_object = plt.imshow(open_image(filename))
+    plt.pause(0.01)
+
     with tqdm(images) as image_uuids:
         for uuid in image_uuids:
             try:
-                classification = ImageClassification(uuid, hands)
-                classification.classify(card_detector)
+                classification = StateClassification(uuid, hands)
+                classification.classify(plt_object)
                 sucesses += 1
             except Exception as e:
                 print(e)
                 failures += 1
 
     print(f"Done! ({sucesses} sucessful, {failures} failures)\n")
-
-    delete = input("delete all unclassified images? (y)")
-    if delete == "":
-        delete_all_unclassified()
+    print(f"saved to {DATASET_NAME}.")

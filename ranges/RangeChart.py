@@ -6,7 +6,6 @@ from enums.Action import Action
 from enums.GameType import GameType
 
 from enums.Hand import Hand
-from enum import Enum
 from enums.Position import Position
 
 from ranges import BASE_CHART_DIR

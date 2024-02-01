@@ -1,5 +1,4 @@
 from torch.utils.data.sampler import WeightedRandomSampler
-import numpy as np
 from typing import List
 from data.PokerTargetBatch import PokerTargetBatch
 from data.PokerTarget import PokerTarget
@@ -8,17 +7,15 @@ import torch
 from torch.utils.data import Dataset, Subset
 from pathlib import Path
 import os
-
-from enums.TargetType import TargetType
-
-from torch.utils.data import SubsetRandomSampler
-
+from data.StateTarget import StateTarget
+from data.StateTargetBath import StateTargetBath
 from enums.Value import Value
 
 
 class PokerDataset(Dataset):
-    def __init__(self, data_dir: Path) -> None:
+    def __init__(self, data_dir: Path, target_class=PokerTarget) -> None:
         self.data_dir = data_dir
+        self.target_class = target_class
         self.samples = [f for f in data_dir.iterdir()]
 
     def __len__(self):
@@ -41,16 +38,25 @@ class PokerDataset(Dataset):
         uuid = str(sample_path).split("\\")[-1]
         classification_path = os.path.join(sample_path, 'classification.txt')
         with open(classification_path, 'r') as f:
-            return PokerTarget(f.readline(), uuid)
+            return self.target_class(f.readline(), uuid)
 
 
-def my_collate(batch):
+def poker_target_collate(batch):
     tensor_data = torch.zeros((len(batch), *batch[0][0].shape))
     for i, (item, _) in enumerate(batch):
         tensor_data[i] = item
 
     targets = [item[1] for item in batch]
     return tensor_data.to(torch.float32),  PokerTargetBatch(targets)
+
+
+def state_target_collate(batch):
+    tensor_data = torch.zeros((len(batch), *batch[0][0].shape))
+    for i, (item, _) in enumerate(batch):
+        tensor_data[i] = item
+
+    targets = [item[1] for item in batch]
+    return tensor_data.to(torch.float32),  StateTargetBath(targets)
 
 
 def subset_with_non_empty_card(ds, targets_types):
@@ -91,16 +97,35 @@ def get_even_sampler(ds, target_types):
     return WeightedRandomSampler(weights=weights, num_samples=len(ds))
 
 
-def data_loader_factory(dataset_dir: Path, test_split: float, batch_size: int, subsets: List[TargetType] = None):
-    ds = PokerDataset(dataset_dir)
+POKER_TARGET = "poker_target"
+STATE_TARGET = "state_target"
+TARGET_CLASSES = {
+    POKER_TARGET: PokerTarget,
+    STATE_TARGET: StateTarget
+}
+
+COLLAE_FUNC = {
+    POKER_TARGET: poker_target_collate,
+    STATE_TARGET: state_target_collate
+}
+
+
+def data_loader_factory(dataset_dir: Path, test_split: float, batch_size: int, target_type=POKER_TARGET, subsets: List[PokerTarget] = None):
+    target_class = TARGET_CLASSES[target_type]
+    collate_func = COLLAE_FUNC[target_type]
+
+    ds = PokerDataset(dataset_dir, target_class)
 
     testing, training = random_split(ds, (1-test_split, test_split))
-    train_sampler = get_even_sampler(
-        training, subsets)
+
+    train_sampler = None
+    if subsets is not None:
+        train_sampler = get_even_sampler(
+            training, subsets)
 
     train_loader = DataLoader(training, batch_size, sampler=train_sampler,
-                              collate_fn=my_collate, num_workers=4, persistent_workers=True)  # , prefetch_factor=5)
+                              collate_fn=collate_func, num_workers=4, persistent_workers=True)  # , prefetch_factor=5)
     test_loader = DataLoader(testing, batch_size,
-                             collate_fn=my_collate, num_workers=4, persistent_workers=True)  # , prefetch_factor=5)
+                             collate_fn=collate_func, num_workers=4, persistent_workers=True)  # , prefetch_factor=5)
 
     return train_loader, test_loader

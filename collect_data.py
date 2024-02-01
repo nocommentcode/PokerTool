@@ -1,5 +1,5 @@
 import torch
-from networks.CardDetector import CardDetector
+from networks.StateDetector import StateDetector
 from time import sleep
 import pyautogui
 import uuid
@@ -21,7 +21,7 @@ def take_screenshot():
 
 
 def run():
-    card_detector = CardDetector.load("card_detector")
+    card_detector = StateDetector.load("card_detector")
     card_detector.eval()
 
     model = PokerNetwork.load("6_player", conv_channels=[
@@ -44,14 +44,14 @@ def run():
 
     while True:
         screenshot = take_screenshot()
-        pred_player_count, pred_table_count = card_detector.get_card_counts(
+        state = card_detector.get_state(
             screenshot)
 
-        if pred_player_count != current_player_count or pred_table_count != current_table_count:
+        if state.player_card_count != current_player_count or state.table_card_count != current_table_count:
             save_screenshot(screenshot)
-            record_and_display_count(pred_player_count, pred_table_count)
-            print(str(gs_fact.proccess_screenshot(screenshot)))
-            current_player_count, current_table_count = pred_player_count, pred_table_count
+            record_and_display_count(
+                state.player_card_count, state.table_card_count)
+            current_player_count, current_table_count = state.player_card_count, state.table_card_count
 
         sleep(1)
 
