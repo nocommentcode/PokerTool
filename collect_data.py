@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 
 from networks.PokerNetwork import PokerNetwork
-from poker.GameStateFactory import GameStateFactory
 
 
 def save_screenshot(screenshot):

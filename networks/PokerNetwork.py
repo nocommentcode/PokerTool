@@ -1,6 +1,7 @@
 import os
+from typing import Dict, List
 from data.img_transformers import FINAL_DIMENSIONS
-from enums.PokerTargetType import PLAYER_CARDS
+from enums.PokerTargetType import PLAYER_CARDS, ALL_CARDS, PokerTargetType
 from networks import BASE_WIEGHT_DIR
 from networks.CardNetworkHead import CardNetworkHead
 from data.PokerTargetBatch import PokerTargetBatch
@@ -32,11 +33,13 @@ class PokerNetwork(nn.Module):
         output_dim = output.shape[1]
 
         nets = {}
-        for type in PLAYER_CARDS:
+        for type in ALL_CARDS:
             nets[type.value] = CardNetworkHead(type, output_dim, fc_layers)
 
         self.nets = torch.nn.ModuleDict(nets)
-        self.optim = torch.optim.RMSprop(self.parameters(), lr=lr)
+
+        self.optim = torch.optim.RMSprop(
+            self.parameters(), lr=lr)
 
     def forward(self, x: torch.Tensor):
         encoded = self.encoder(x)
@@ -46,10 +49,10 @@ class PokerNetwork(nn.Module):
 
         return predictions
 
-    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch) -> PokerNetworkLog:
+    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch, loss_weights: Dict[str, (torch.T, torch.T)]) -> PokerNetworkLog:
         encoded = self.encoder(x)
 
-        loss_logs = {type: net.train_iter(encoded, target)
+        loss_logs = {type: net.train_iter(encoded, target, loss_weights[type])
                      for type, net in self.nets.items()}
         total_loss = sum([loss for loss, _ in loss_logs.values()])
 
@@ -94,3 +97,24 @@ class PokerNetwork(nn.Module):
         state_dict = torch.load(filename)
         model.load_state_dict(state_dict, assign=True)
         return model
+
+    # def un_freeze_all(self):
+    #     for parameter in self.parameters():
+    #         parameter.requires_grad = True
+
+    def freeze_all(self):
+        for parameter in self.parameters():
+            parameter.requires_grad = False
+
+    def freeze_encoder(self):
+        for parameter in self.encoder.parameters():
+            parameter.requires_grad = False
+
+    def unfreeze_encoder(self):
+        for parameter in self.encoder.parameters():
+            parameter.requires_grad = True
+
+    def unfreeze(self, targets: List[PokerTargetType]):
+        for target in targets:
+            for parameter in self.nets[target.value].parameters():
+                parameter.requires_grad = True

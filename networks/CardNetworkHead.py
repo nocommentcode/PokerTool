@@ -38,14 +38,17 @@ class CardNetworkHead(nn.Module):
 
         return suit, value
 
-    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch) -> CardHeadLog:
+    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch, loss_weights: (torch.T, torch.T) = (None, None)) -> CardHeadLog:
+        suit_weights, value_weights = loss_weights
 
         pred_suit, pred_value = self.forward(x)
         act_suit, act_value, uuids = target[self.target_type]
 
-        loss = nn.CrossEntropyLoss()
-        suit_loss = loss(pred_suit, act_suit)
-        value_loss = loss(pred_value, act_value)
+        suit_loss_fc = nn.CrossEntropyLoss(suit_weights)
+        suit_loss = suit_loss_fc(pred_suit, act_suit)
+
+        value_loss_fc = nn.CrossEntropyLoss(value_weights)
+        value_loss = value_loss_fc(pred_value, act_value)
 
         return (suit_loss+value_loss), CardHeadLog("train", suit_loss.detach().item(), value_loss.detach().item(), pred_suit, act_suit, pred_value, act_value, uuids)
 

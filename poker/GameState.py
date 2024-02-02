@@ -11,12 +11,12 @@ class GameState:
         self.position = self.get_position(self.dealer_pos)
         self.game_stage = self.get_game_stage(player_cards, table_cards)
 
-    def get_position(self, dealer_pos):
-        positions = [Position.BTN, Position.SB, Position.BB,
-                     Position.UTG, Position.HJ, Position.CO]
+    def get_position(self, dealer_pos) -> Position:
+        positions = [Position.BTN, Position.CO, Position.HJ,
+                     Position.UTG, Position.BB, Position.SB]
         return positions[dealer_pos]
 
-    def get_game_stage(self, player_cards, table_cards):
+    def get_game_stage(self, player_cards, table_cards) -> GameStage:
         if player_cards == 0:
             return GameStage.FOLDED
 

@@ -5,7 +5,7 @@ import torch.nn as nn
 from data.img_transformers import FINAL_DIMENSIONS
 from networks import BASE_WIEGHT_DIR
 from data.img_transformers import poker_img_transformer
-from networks.GameState import GameState
+from poker.GameState import GameState
 
 
 class StateDetector(nn.Module):

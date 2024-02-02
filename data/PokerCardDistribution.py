@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from torch.utils.data import DataLoader
 from data.PokerTargetBatch import PokerTargetBatch
 from enums.Suit import Suit
@@ -55,6 +56,11 @@ class PokerCardDistribution:
         writer.add_text(
             f"{self.type.value}/Distribution/{self.name}", str(self))
 
+    def get_class_weights(self):
+        suits_counts = np.array(self.suit_counts)
+        value_counts = np.array(self.value_counts)
+        return torch.tensor(1 - (suits_counts/self.total_samples)).float().to('cuda'), torch.tensor(1-(value_counts/self.total_samples)).float().to('cuda')
+
 
 def plot_dist(train, test, labels, ax):
     ind = np.arange(len(labels))
@@ -86,19 +92,23 @@ def plot_card_dist(train_dist, test_dist):
     return fig
 
 
-def log_distributions(train_loader: DataLoader, test_loader: DataLoader, writer):
-    train_distributions = [PokerCardDistribution(
-        type, "train") for type in PokerTargetType]
-    for _, y in train_loader:
-        for dist in train_distributions:
+def get_distributions_for_loader(loader: DataLoader):
+    distributions = {type: PokerCardDistribution(
+        type, "train") for type in PokerTargetType}
+    for _, y in loader:
+        for dist in distributions.values():
             dist += y
+    return distributions
 
-    test_distributions = [PokerCardDistribution(
-        type, "test") for type in PokerTargetType]
-    for _, y in test_loader:
-        for dist in test_distributions:
-            dist += y
 
-    for train, test in zip(train_distributions, test_distributions):
+def get_distributions(train_loader: DataLoader, test_loader: DataLoader):
+    return get_distributions_for_loader(train_loader), get_distributions_for_loader(test_loader)
+
+
+def log_distributions(train_distributions, test_distributions, writer, name="distribution"):
+    types = train_distributions.keys()
+    for type in types:
+        train = train_distributions[type]
+        test = test_distributions[type]
         plot = plot_card_dist(train, test)
-        writer.add_figure(f"{train.type.value}/distribution", plot)
+        writer.add_figure(f"{type.value}/{name}", plot)

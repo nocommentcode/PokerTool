@@ -10,7 +10,15 @@ class Position(Enum):
     BB = "bb"
 
     def __str__(self):
-        return f"# {ORDERED_POSITIONS.index(self)}"
+        position_names = {
+            Position.BB: "Big-blind",
+            Position.SB: "Small-blind",
+            Position.UTG: "Under the gun",
+            Position.HJ: "High jack",
+            Position.CO: "Cutoff",
+            Position.BTN: "Button",
+        }
+        return position_names[self]
 
     @staticmethod
     def from_string(string):
@@ -22,7 +30,3 @@ class Position(Enum):
             "sb": Position.SB,
             "bb": Position.BB}
         return positions[string]
-
-
-ORDERED_POSITIONS = [Position.BTN, Position.SB, Position.BB,
-                     Position.UTG, Position.HJ, Position.CO]
