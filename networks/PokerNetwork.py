@@ -33,7 +33,7 @@ class PokerNetwork(nn.Module):
         output_dim = output.shape[1]
 
         nets = {}
-        for type in PLAYER_CARDS:
+        for type in ALL_CARDS:
             nets[type.value] = CardNetworkHead(type, output_dim, fc_layers)
 
         self.nets = torch.nn.ModuleDict(nets)

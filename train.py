@@ -6,12 +6,12 @@ from torch.utils.tensorboard import SummaryWriter
 from training.Trainer import Trainer
 
 DATASET_NAME = "6_player_new_crop"
-DATASET_SUBSET = PLAYER_CARDS
+DATASET_SUBSET = None
 WEIGH_LOSSES = False
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 EPOCHS = 300
 SAVE_NAME = "6_player_new_crop"
-LR = 0.0001
+LR = 0.0007
 CONV_CHANNELS = [32, 64]
 FC_LAYER = [64]
 
