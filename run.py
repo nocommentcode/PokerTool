@@ -21,7 +21,7 @@ def run():
     state_provider = StateProvider(state_detector, model, GAME_TYPE, charts)
 
     while True:
-        state_provider.tick()
+        state_provider.tick(save_screenshots=True)
         sleep(1)
 
 

@@ -11,7 +11,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 STATE_DECTOR_NAME = "6_player_state_detector"
 DIR_NAME = UN_CLASSIFIED_DIR
-DIR_NAME = "images/unclassified_images_from_big_batch"
+# DIR_NAME = "images/unclassified_images_from_big_batch"
 NUM_PLAYERS = 6
 
 

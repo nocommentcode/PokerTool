@@ -17,5 +17,5 @@ PLAYER_CARDS = [PokerTargetType.PlayerCard1, PokerTargetType.PlayerCard2]
 FLOP_CARDS = [PokerTargetType.FlopCard1,
               PokerTargetType.FlopCard2, PokerTargetType.FlopCard3]
 TABLE_CARDS = FLOP_CARDS + \
-    [PokerTargetType.TurnCard, PokerTargetType.RiverCard]
+    [PokerTargetType.TurnCard]  # d, PokerTargetType.RiverCard]
 ALL_CARDS = PLAYER_CARDS + TABLE_CARDS

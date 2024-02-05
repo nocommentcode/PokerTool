@@ -33,7 +33,7 @@ class PokerNetwork(nn.Module):
         output_dim = output.shape[1]
 
         nets = {}
-        for type in ALL_CARDS:
+        for type in PLAYER_CARDS:
             nets[type.value] = CardNetworkHead(type, output_dim, fc_layers)
 
         self.nets = torch.nn.ModuleDict(nets)
@@ -49,7 +49,7 @@ class PokerNetwork(nn.Module):
 
         return predictions
 
-    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch, loss_weights: Dict[str, (torch.T, torch.T)]) -> PokerNetworkLog:
+    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch, loss_weights) -> PokerNetworkLog:
         encoded = self.encoder(x)
 
         loss_logs = {type: net.train_iter(encoded, target, loss_weights[type])

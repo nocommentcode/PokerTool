@@ -1,3 +1,5 @@
+import uuid
+from data import UN_CLASSIFIED_DIR
 from data.img_transformers import poker_img_transformer
 from enums.GameStage import GameStage
 from enums.GameType import GameType
@@ -26,12 +28,12 @@ class StateProvider:
         self.pre_flop_charts = pre_flop_charts
 
     def take_screenshot(self):
-        # return pyautogui.screenshot()
+        return pyautogui.screenshot()
 
-        from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
-        from PIL.Image import open as open_image
-        import os
-        return open_image(os.path.join(UN_CLASSIFIED_DIR, '1927f44a-6ea4-4791-8694-df8debc4c1ac.png'))
+        # from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
+        # from PIL.Image import open as open_image
+        # import os
+        # return open_image(os.path.join(UN_CLASSIFIED_DIR, '1927f44a-6ea4-4791-8694-df8debc4c1ac.png'))
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()
@@ -85,8 +87,11 @@ class StateProvider:
         table_cards = table_cards[:self.current_state.table_card_count]
         return PostFlopGameState(*base_args, player_cards, table_cards)
 
-    def tick(self):
+    def tick(self, save_screenshots=False):
         next_state, screenshot = self.get_next_state_consensus()
+        if save_screenshots:
+            if next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
+                self.save_screenshot(screenshot)
         if self.current_state != next_state:
             self.current_state = next_state
 
@@ -96,3 +101,7 @@ class StateProvider:
     def print_for_screenshot_(self, screenshot):
         self.current_state = self.state_detector.get_state(screenshot)
         print(str(self.get_game_state(screenshot)))
+
+    def save_screenshot(self, screenshot):
+        filename = f"{UN_CLASSIFIED_DIR}/{uuid.uuid4()}.png"
+        screenshot.save(filename)

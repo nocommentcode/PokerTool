@@ -38,7 +38,7 @@ class CardNetworkHead(nn.Module):
 
         return suit, value
 
-    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch, loss_weights: (torch.T, torch.T) = (None, None)) -> CardHeadLog:
+    def train_iter(self, x: torch.Tensor, target: PokerTargetBatch, loss_weights=(None, None)) -> CardHeadLog:
         suit_weights, value_weights = loss_weights
 
         pred_suit, pred_value = self.forward(x)

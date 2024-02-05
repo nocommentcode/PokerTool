@@ -6,13 +6,15 @@ from torch.utils.tensorboard import SummaryWriter
 from training.Trainer import Trainer
 
 DATASET_NAME = "6_player"
+# [PokerTargetType.PlayerCard1, PokerTargetType.PlayerCard2]
 DATASET_SUBSET = None
+#   PokerTargetType.TurnCard, PokerTargetType.FlopCard3]
 WEIGH_LOSSES = False
 BATCH_SIZE = 32
-EPOCHS = 350
-SAVE_NAME = "6_player_player_cards"
-LR = 0.0005
-CONV_CHANNELS = [32, 64]
+EPOCHS = 150
+SAVE_NAME = "6_player_all"
+LR = 0.001
+CONV_CHANNELS = [8, 16, 32]
 FC_LAYER = [64]
 
 

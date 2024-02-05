@@ -5,7 +5,7 @@ from networks.StateDetector import StateDetector
 
 six_player_model_data = {
     "state_detector_name": "6_player_state_detector",
-    "poker_network_name": "6_player_player_cards",
+    "poker_network_name": "6_player_all",  # "6_player_player_cards",
     "poker_network_conv": [32, 64],
     "poker_network_fc": [64]
 }
