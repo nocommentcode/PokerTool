@@ -3,11 +3,11 @@ from pathlib import Path
 
 from tqdm import tqdm
 from data import CLASSIFIED_DIR, DATASET_DIR, IMAGE_NAME
-from data.img_transformers import poker_img_transformer
+from data.img_transformers import cards_transformer
 import torch
 from PIL.Image import open as open_image
 
-DATASET_NAME = "6_player"
+DATASET_NAME = "6_player_new_crop"
 DATA_DIR = CLASSIFIED_DIR
 
 
@@ -18,7 +18,7 @@ def build_dataset(dataset_name):
     def get_image(sample):
         image_path = os.path.join(sample, IMAGE_NAME)
         image = open_image(image_path)
-        return poker_img_transformer(image)
+        return cards_transformer(image)
 
     def get_label(sample):
         classification_path = os.path.join(sample, "classification.txt")

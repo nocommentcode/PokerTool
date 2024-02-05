@@ -44,10 +44,10 @@ class CardNetworkHead(nn.Module):
         pred_suit, pred_value = self.forward(x)
         act_suit, act_value, uuids = target[self.target_type]
 
-        suit_loss_fc = nn.CrossEntropyLoss(suit_weights)
+        suit_loss_fc = nn.CrossEntropyLoss()
         suit_loss = suit_loss_fc(pred_suit, act_suit)
 
-        value_loss_fc = nn.CrossEntropyLoss(value_weights)
+        value_loss_fc = nn.CrossEntropyLoss()
         value_loss = value_loss_fc(pred_value, act_value)
 
         return (suit_loss+value_loss), CardHeadLog("train", suit_loss.detach().item(), value_loss.detach().item(), pred_suit, act_suit, pred_value, act_value, uuids)

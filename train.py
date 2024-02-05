@@ -1,20 +1,18 @@
 import torch
-from enums.PokerTargetType import PokerTargetType
+from enums.PokerTargetType import PLAYER_CARDS, PokerTargetType
 from networks.PokerNetwork import PokerNetwork
 from torch.utils.tensorboard import SummaryWriter
 
 from training.Trainer import Trainer
 
-DATASET_NAME = "6_player"
-# [PokerTargetType.PlayerCard1, PokerTargetType.PlayerCard2]
-DATASET_SUBSET = None
-#   PokerTargetType.TurnCard, PokerTargetType.FlopCard3]
+DATASET_NAME = "6_player_new_crop"
+DATASET_SUBSET = PLAYER_CARDS
 WEIGH_LOSSES = False
 BATCH_SIZE = 32
-EPOCHS = 150
-SAVE_NAME = "6_player_all"
-LR = 0.001
-CONV_CHANNELS = [8, 16, 32]
+EPOCHS = 300
+SAVE_NAME = "6_player_new_crop"
+LR = 0.0001
+CONV_CHANNELS = [32, 64]
 FC_LAYER = [64]
 
 

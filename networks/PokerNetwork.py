@@ -1,6 +1,6 @@
 import os
 from typing import Dict, List
-from data.img_transformers import FINAL_DIMENSIONS
+from data.img_transformers import CARDS_FINAL_DIMENTIONS
 from enums.PokerTargetType import PLAYER_CARDS, ALL_CARDS, PokerTargetType
 from networks import BASE_WIEGHT_DIR
 from networks.CardNetworkHead import CardNetworkHead
@@ -14,7 +14,7 @@ from networks.PokerNetworkLog import PokerNetworkLog
 
 
 class PokerNetwork(nn.Module):
-    def __init__(self, input_shape=FINAL_DIMENSIONS, lr=0.001, conv_channels=[32, 64, 128], fc_layers=[256]):
+    def __init__(self, input_shape=CARDS_FINAL_DIMENTIONS, lr=0.001, conv_channels=[32, 64, 128], fc_layers=[256]):
         super().__init__()
 
         self.encoder = nn.Sequential()
