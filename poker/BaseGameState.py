@@ -10,6 +10,6 @@ class BaseGameState:
         self.position = game_state.position
 
     def __str__(self) -> str:
-        string = f"------ {self.game_stage.value} ({self.game_state.num_opponents} in hand) -------\n"
+        string = f"------ {self.game_stage.value} ({len(self.game_state.opponent_positions)} in hand) -------\n"
         string += f"Position: {str(self.position)}\n\n"
         return string

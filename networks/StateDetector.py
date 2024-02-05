@@ -1,15 +1,16 @@
 import os
+import numpy as np
 import torch
 import torch.nn as nn
 
-from data.img_transformers import FINAL_DIMENSIONS
+from data.img_transformers import TABLE_FINAL_DIMENTIONS
 from networks import BASE_WIEGHT_DIR
-from data.img_transformers import poker_img_transformer
+from data.img_transformers import table_transformer
 from poker.GameState import GameState
 
 
 class StateDetector(nn.Module):
-    def __init__(self, input_shape=FINAL_DIMENSIONS, lr=0.001, player_count=6):
+    def __init__(self, input_shape=TABLE_FINAL_DIMENTIONS, lr=0.001, player_count=6):
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Conv2d(3, 16, 3),
@@ -52,7 +53,7 @@ class StateDetector(nn.Module):
             nn.ReLU(),
             nn.Dropout(),
             nn.Linear(128, 64),
-            nn.Linear(64, player_count)
+            nn.Linear(64, player_count-1)
         )
 
         self.optim = torch.optim.Adam(self.parameters(), lr=lr)
@@ -62,8 +63,8 @@ class StateDetector(nn.Module):
         player_cards = self.player_card_fc(encoded)
         table_cards = self.table_card_fc(encoded)
         dealer_pos = self.dealer_pos_fc(encoded)
-        num_opponents = self.num_opponents_fc(encoded)
-        return player_cards, table_cards, dealer_pos, num_opponents
+        opponents = self.num_opponents_fc(encoded)
+        return player_cards, table_cards, dealer_pos, opponents
 
     def save(self, filename: str):
         filename = os.path.join(BASE_WIEGHT_DIR, f'{filename}.pth')
@@ -79,18 +80,21 @@ class StateDetector(nn.Module):
 
     def get_state(self, screenshot) -> GameState:
         # to batch
-        transformed = poker_img_transformer(screenshot)
+        transformed = table_transformer(screenshot)
         batch = transformed.unsqueeze(0)
         batch = batch.to(torch.float32).to("cuda")
 
-        player_preds, table_preds, dealer_pos, num_opponents = self.forward(
+        player_preds, table_preds, dealer_pos, opponents = self.forward(
             batch)
 
         softmax = nn.Softmax(dim=1)
+        sigmoid = nn.Sigmoid()
 
         player_count = torch.argmax(softmax(player_preds), 1)[0]
         table_count = torch.argmax(softmax(table_preds), 1)[0]
         dealer_pos = torch.argmax(softmax(dealer_pos), 1)[0]
-        num_opponents = torch.argmax(softmax(num_opponents), 1)[0]
 
-        return GameState(player_count.item(), table_count.item(), dealer_pos.item(), num_opponents.item())
+        opponents = [(sigmoid(opponent) > 0.5).item()
+                     for opponent in opponents[0]]
+
+        return GameState(player_count.item(), table_count.item(), dealer_pos.item(), np.array(opponents))

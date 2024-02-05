@@ -8,7 +8,6 @@ from poker.GameState import GameState
 
 class PreFlopGameState(BaseGameState):
     def __init__(self, game_type: GameType, game_state: GameState, player_cards, charts):
-        print(charts)
         super().__init__(game_type, game_state)
         self.player_cards = player_cards
         self.hand = Hand(*player_cards)

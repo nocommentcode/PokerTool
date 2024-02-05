@@ -1,5 +1,5 @@
 import torch
-from data.img_transformers import poker_img_transformer
+from data.img_transformers import table_transformer
 import datetime
 from pathlib import Path
 from matplotlib import pyplot as plt
@@ -10,8 +10,9 @@ from PIL.Image import open as open_image
 from data.GGPokerHandHistory import GGPokerHandHistory
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-DATASET_NAME = "6_player"
-UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
+DATASET_NAME = "6_player_state_new_crop"
+# UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
+UNCLASSIDIED_NAME = "images/unclassified_images_from_big_batch_2"
 NUM_PLAYERS = 6
 
 
@@ -45,7 +46,7 @@ class StateClassification:
         dir = Path(f"{DATASET_DIR}/{DATASET_NAME}/{self.uuid}")
         dir.mkdir(parents=True, exist_ok=True)
 
-        tensor_img = poker_img_transformer(image)
+        tensor_img = table_transformer(image)
         torch.save(tensor_img, f"{dir}/image.pt")
 
         with open(f"{dir}/classification.txt", 'w') as f:
@@ -72,7 +73,14 @@ class StateClassification:
     def get_classification(self):
         print(f"\n{self.hand.dealer_pos}  player_card  table_cards  num_players")
         user_input = input("->")
-        labels = [str(self.hand.dealer_pos)] + user_input.split(" ")
+        user_input = user_input.split(" ")
+        player_cards = user_input[0]
+        table_cards = user_input[1]
+        opponents = [int(char) for char in user_input[2]]
+        opponents = ["0" if i not in opponents else "1" for i in range(1, 6)]
+
+        labels = [str(self.hand.dealer_pos)] + \
+            [player_cards] + [table_cards] + opponents
         return ",".join(labels)
 
     def classify(self, plt_object):
@@ -81,6 +89,7 @@ class StateClassification:
         plt.draw()
 
         classification = self.get_classification()
+        print(classification)
         self.save_to_dataset(image, classification)
 
 

@@ -24,7 +24,6 @@ class RangeChart:
         suited_ax = int(hand.is_suited() or hand.is_pokets())
 
         probabilities = self.chart[ax_1, ax_2, suited_ax]
-        print(probabilities)
         return np.random.choice(self.actions, p=probabilities)
 
 

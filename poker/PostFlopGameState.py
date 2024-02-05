@@ -9,7 +9,6 @@ class PostFlopGameState(BaseGameState):
         super().__init__(game_type, game_state)
         self.player_cards = player_cards
         self.hand = Hand(*player_cards)
-        print([str(table_card) for table_card in table_cards])
         self.table_cards = table_cards
 
     def __str__(self):

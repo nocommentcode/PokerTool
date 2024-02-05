@@ -1,6 +1,5 @@
 import uuid
 from data import UN_CLASSIFIED_DIR
-from data.img_transformers import poker_img_transformer
 from enums.GameStage import GameStage
 from enums.GameType import GameType
 from enums.PokerTargetType import PLAYER_CARDS, TABLE_CARDS
@@ -9,7 +8,7 @@ from networks.StateDetector import StateDetector
 from poker.FoldedGameState import FoldedGameState
 from poker.PostFlopGameState import PostFlopGameState
 from poker.PreFlopGameState import PreFlopGameState
-
+from data.img_transformers import table_transformer, cards_transformer
 
 import pyautogui
 import torch
@@ -19,21 +18,20 @@ from time import sleep
 
 
 class StateProvider:
-    def __init__(self, state_detector: StateDetector, model: PokerNetwork, game_type: GameType, pre_flop_charts, image_transformer=poker_img_transformer):
+    def __init__(self, state_detector: StateDetector, model: PokerNetwork, game_type: GameType, pre_flop_charts):
         self.state_detector = state_detector
         self.model = model
         self.current_state = None
-        self.transformer = image_transformer
         self.game_type = game_type
         self.pre_flop_charts = pre_flop_charts
 
     def take_screenshot(self):
-        return pyautogui.screenshot()
+        # return pyautogui.screenshot()
 
-        # from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
-        # from PIL.Image import open as open_image
-        # import os
-        # return open_image(os.path.join(UN_CLASSIFIED_DIR, '1927f44a-6ea4-4791-8694-df8debc4c1ac.png'))
+        from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
+        from PIL.Image import open as open_image
+        import os
+        return open_image(os.path.join(CLASSIFIED_DIR, "0e155de8-601c-46e9-8fb8-85b6cb8a1ee1", 'image.png'))
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()
@@ -42,7 +40,7 @@ class StateProvider:
 
     def get_next_state_consensus(self):
         state, _ = self.get_screenshot_and_state()
-        sleep(0.05)
+        sleep(0.1)
         validation_state, screenshot = self.get_screenshot_and_state()
 
         if state != validation_state:
@@ -51,7 +49,7 @@ class StateProvider:
         return validation_state, screenshot
 
     def get_cards(self, screenshot, get_player_cards=True, get_table_cards=True):
-        transformed = self.transformer(screenshot)
+        transformed = cards_transformer(screenshot)
         batch = transformed.unsqueeze(0)
         batch = batch.to(torch.float32).to("cuda")
 
@@ -89,9 +87,11 @@ class StateProvider:
 
     def tick(self, save_screenshots=False):
         next_state, screenshot = self.get_next_state_consensus()
+
         if save_screenshots:
-            if next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
+            if next_state.game_stage != self.current_state.game_stage:
                 self.save_screenshot(screenshot)
+
         if self.current_state != next_state:
             self.current_state = next_state
 

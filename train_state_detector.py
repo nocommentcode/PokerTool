@@ -4,15 +4,15 @@ import torch
 from tqdm import tqdm
 from data import DATASET_DIR
 from data.PokerDataset import STATE_TARGET, data_loader_factory
-from enums.StateTargetType import StateTargetType
+from enums.StateTargetType import StateTargetType, OPPONENTS
 from networks.StateDetector import StateDetector
 import torch.nn as nn
 
-DATASET_NAME = '6_player_state'
+DATASET_NAME = '6_player_state_new_crop'
 BATCH_SIZE = 5
-EPOCHS = 30
+EPOCHS = 50
 LR = 0.001
-SAVE_NAME = '6_player_state_detector'
+SAVE_NAME = '6_player_state_detector_new_crop'
 
 
 def run(model, dataloader, device, is_train, debug):
@@ -29,7 +29,7 @@ def run(model, dataloader, device, is_train, debug):
             x = x.to(device)
             y.to(device)
 
-            player_cards, table_cards, dealer_pos, num_opponents = model.forward(
+            player_cards, table_cards, dealer_pos, opponents = model.forward(
                 x)
 
             loss_func = nn.CrossEntropyLoss()
@@ -43,10 +43,16 @@ def run(model, dataloader, device, is_train, debug):
             dealer_target, _ = y[StateTargetType.DealerPosition]
             dealer_loss = loss_func(dealer_pos, dealer_target)
 
-            opponent_target, uuids = y[StateTargetType.NumOpponents]
-            opponent_loss = loss_func(num_opponents, opponent_target)
+            opponent_loss_fc = nn.BCEWithLogitsLoss()
+            opponent_targets = [y[opponent][0]
+                                for opponent in OPPONENTS]
+            opponent_targets = torch.stack(opponent_targets)
+            opponent_targets = opponent_targets.swapaxes(0, 1)
+            opponent_loss = [opponent_loss_fc(pred, target.to(torch.float32)) for pred, target in zip(
+                opponents, opponent_targets)]
 
-            batch_loss = player_loss + table_loss + dealer_loss + opponent_loss
+            batch_loss = player_loss + table_loss + \
+                dealer_loss + sum(opponent_loss)
 
             if is_train:
                 model.optim.zero_grad()
@@ -55,14 +61,18 @@ def run(model, dataloader, device, is_train, debug):
 
             with torch.no_grad():
                 softmax = nn.Softmax(dim=1)
+                sigmoid = nn.Sigmoid()
                 num_correct_player = (
                     torch.argmax(softmax(player_cards), 1) == player_target).long().sum()
                 num_correct_target = (
                     torch.argmax(softmax(table_cards), 1) == table_target).long().sum()
                 num_correct_dealer = (
                     torch.argmax(softmax(dealer_pos), 1) == dealer_target).long().sum()
+                pred_opponents = torch.stack(
+                    [sigmoid(opponent) > 0.5 for opponent in opponents])
+
                 num_correct_opponent = (
-                    torch.argmax(softmax(num_opponents), 1) == opponent_target).long().sum()
+                    pred_opponents == opponent_targets).long().sum() / 5
 
                 total_correct_player += num_correct_player.item()
                 total_correct_table += num_correct_target.item()
