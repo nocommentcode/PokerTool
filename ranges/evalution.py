@@ -1,6 +1,9 @@
 from enum import Enum
+import math
 import time
 from typing import List
+import numpy as np
+import pandas as pd
 import numpy as np
 
 
@@ -206,8 +209,8 @@ class Hand:
 
 
 class HandEvalution:
-    def get_equity(self):
-        return self.hit[:, 0].sum() / self.hit.shape[0]
+    def get_hit_percent(self):
+        return self.hit[:, 0].sum() * 100 / self.hit.shape[0]
 
     def __str__(self):
         return f"{self.name}: {self.get_equity()}"
@@ -441,13 +444,18 @@ class EvalutionResult:
         self.evalutions = evalutions
         self.equity = equity
 
-    def __str__(self):
-        string = f"Equity: {self.equity}\n"
-        for eval in self.evalutions:
-            if eval.get_equity() > 0:
-                string += f"{str(eval)}\n"
+    def get_hand_percentages(self):
+        equity = np.array([eval.get_hit_percent()
+                          for eval in self.evalutions[:-1]])
+        equity = equity.round(0)
+        hands = np.array([eval.name for eval in self.evalutions])
 
-        return string
+        indices = np.where(equity > 5)
+        equity = equity.astype(int)
+
+        df = pd.DataFrame(equity[indices], hands[indices], ["Hit %"])
+
+        return str(df.head(len(equity)))
 
 
 class Evaluation:
@@ -458,6 +466,7 @@ class Evaluation:
             [self.card_to_num(card) for card in table_cards])
 
         self.player_count = player_count
+        self.hand_ranges = np.load("hand_strengths.npy")
 
     @staticmethod
     def card_to_num(card: Card):
@@ -482,6 +491,38 @@ class Evaluation:
         # suit 3 -> 40 - 52
         else:
             return (card_num - 1) * 4 + card_suit
+
+    def get_opponent_hole_cards(self, opponent_ranges, iterations):
+        def remove_hand_with_card(hands, card):
+            first_card = np.where(hands[:, 0] == card)
+            second_card = np.where(hands[:, 1] == card)
+            combined = np.logical_or(first_card, second_card)
+            return hands[np.invert(combined)]
+
+        all_hands = self.hand_ranges
+        for card in self.player_cards + self.table_cards:
+            all_hands = remove_hand_with_card(card)
+
+        def generate(count):
+            return np.random.randint(low=[0 for _ in opponent_ranges],
+                                     high=opponent_ranges,
+                                     size=(count, len(opponent_ranges)))
+
+        def get_prob_idx():
+            equal_dims = [hand_idxes[:, i] == hand_idxes[:, i+1]
+                          for i in range(len(opponent_ranges) - 1)]
+            equal_dims = np.array(equal_dims)
+            return np.logical_or.reduce(equal_dims)
+
+        hand_idxes = generate(iterations)
+        prob_idx = get_prob_idx()
+        while np.any(prob_idx):
+            indicies, = np.where(prob_idx)
+            hand_idxes[indicies] = generate(len(indicies))
+            prob_idx = get_prob_idx()
+
+        opponent_cards = all_hands[hand_idxes]
+        return opponent_cards
 
     def deal_cards(self, iterations):
         def remove_cards_from_deck(cards, deck):
@@ -806,12 +847,173 @@ def run_tests():
     test_high_card()
 
 
+def calculate_starting_hand_strengths(save_name='hand_strengths.npy'):
+    strengths = []
+    hands = []
+    for suit1 in [1, 2, 3, 4]:
+        for val1 in [i for i in range(1, 14)]:
+            card1 = Card(Suit.from_index(suit1),
+                         Value.from_index(val1))
+
+            for suit2 in [1, 2, 3, 4]:
+                for val2 in [i for i in range(1, 14)]:
+
+                    card2 = Card(Suit.from_index(suit2),
+                                 Value.from_index(val2))
+                    if card1 == card2:
+                        continue
+
+                    num1 = Evaluation.card_to_num(card1)
+                    num2 = Evaluation.card_to_num(card2)
+
+                    eval = Evaluation(Hand(card1, card2), [], 6)
+                    result = eval.run_evaluation(iterations=10)
+                    strengths.append(result.equity)
+                    hands.append([num1, num2])
+
+    strengths = np.array(strengths)
+    stregths_idx_sorted = np.argsort(strengths)[::-1]
+
+    hands = np.array(hands)
+    sorted_hands = hands[stregths_idx_sorted]
+    np.save(save_name, sorted_hands)
+
+
+def print_top_x_hands(x, save_name='hand_strengths.npy'):
+    hands = np.load(save_name)
+    print(hands.shape)
+    print(hands[:20])
+    for hand in hands[:x]:
+        num1, num2 = hand[0], hand[1]
+        card1, suit1 = math.ceil(num1 / 4), num1 % 4
+        card2, suit2 = math.ceil(num2 / 4), num2 % 4
+        if card1 == 13:
+            card1 = 1
+        else:
+            card1 += 1
+
+        if card2 == 13:
+            card2 = 1
+        else:
+            card2 += 1
+        card1 = Card(Suit.from_index(int(suit1 + 1)),
+                     Value.from_index(int(card1)))
+        card2 = Card(Suit.from_index(int(suit2 + 1)),
+                     Value.from_index(int(card2)))
+        print(Hand(card1, card2))
+
+
 if __name__ == "__main__":
-    np.random.seed(8)
-    player_hand = H("QS", "KS")
-    table_cards = [C("5S"), C("7S"), C("TS")]
-    table_cards = []
-    E = Evaluation(player_hand, table_cards, 3)
-    result = E.run_evaluation(iterations=2)
-    print(result.evalutions[3].hit[:])
-    print(result)
+    # np.random.seed(8)
+    # player_hand = H("QS", "KS")
+    # table_cards = [C("5S"), C("7S"), C("TS")]
+    # table_cards = []
+    # E = Evaluation(player_hand, table_cards, 3)
+    # result = E.run_evaluation(iterations=2)
+    # print(result.evalutions[3].hit[:])
+    # print(result)
+    # import torch
+    # num_hands = 52
+    # banned_hands = torch.zeros((0, 10)).long()
+
+    # weights = torch.zeros((10, 3))
+    # weights[:2, 0] = 1
+    # weights[:5, 1] = 1
+    # weights[:8, 2] = 1
+
+    # print(weights)
+
+    # selected_hands = torch.multinomial(
+    #     weights, num_samples=5, replacement=False)
+
+    # print(selected_hands)
+
+    import numpy as np
+
+    def generate_non_overlapping_tuples(num_samples, x_range, y_range, z_range):
+        result = []
+        for _ in range(num_samples):
+            while True:
+                x = np.random.randint(*x_range)
+                y = np.random.randint(*y_range)
+                z = np.random.randint(*z_range)
+
+                # Check if the tuple overlaps with any existing tuples
+
+                if np.all((x != t[0]) and (y != t[1]) and (z != t[2]) for t in result):
+                    result.append((x, y, z))
+                    break
+
+        return np.array(result)
+
+    def test(num_samples, x_range, y_range, z_range):
+        while True:
+            g = np.random.randint(low=[0, 0, 0], high=[
+                x_range, y_range, z_range], size=(num_samples, 3))
+
+            a = g[:, 0] == g[:, 1]
+            b = g[:, 1] == g[:, 2]
+            c = g[:, 0] == g[:, 2]
+            d = np.logical_or(np.logical_or(a, b), c)
+            if not (np.any(d)):
+
+                return g
+    # # Example usage:
+    # num_samples = 500000
+    # x_range = (30)
+    # y_range = (42)
+    # z_range = (55)
+
+    # # result = generate_non_overlapping_tuples(
+    # #     num_samples, x_range, y_range, z_range)
+    # result = test(
+    #     num_samples, x_range, y_range, z_range)
+    # print(result)
+
+    calculate_starting_hand_strengths()
+    # calculate_starting_hand_strengths_temp()
+    # for card in [Card(Suit.Spades, Value.Ace), Card(Suit.Diamonds, Value.Ace), Card(Suit.Clubs, Value.Ace), Card(Suit.Hearts, Value.Ace)]:
+    #     print(Evaluation.card_to_num(card))
+    # print_top_x_hands(250)
+    # def get_opponent_hand_indexes(num_samples, opponent_ranges):
+    #     result = np.zeros((num_samples, len(opponent_ranges)))
+    #     for i in range(num_samples):
+    #         while True:
+    #             hand_idx = np.random.randint(
+    #                 low=[0 for _ in opponent_ranges], high=opponent_ranges, size=(len(opponent_ranges), ))
+
+    #             if len(np.unique(hand_idx)) == len(opponent_ranges):
+    #                 result[i] = hand_idx
+    #                 break
+
+    #     return result
+
+    # def two(num_samples, opponent_ranges):
+    #     def generate(count):
+    #         return np.random.randint([0 for _ in opponent_ranges], opponent_ranges, size=(
+    #             count, len(opponent_ranges)))
+
+    #     def get_prob_idx():
+    #         equal_dims = np.array([result[:, i] == result[:, i+1]
+    #                               for i in range(len(opponent_ranges) - 1)])
+    #         return np.logical_or.reduce(equal_dims)
+
+    #     result = generate(num_samples)
+    #     prob_idx = get_prob_idx()
+    #     while np.any(prob_idx):
+    #         indicies, = np.where(prob_idx)
+    #         print(len(indicies))
+    #         result[indicies] = generate(len(indicies))
+    #         prob_idx = get_prob_idx()
+
+    #     return result
+
+    # start = time.time()
+    # res = two(10, [5, 2, 3])
+    # print(res)
+    # print(str(time.time() - start))
+
+    # start = time.time()
+    # res = get_opponent_hand_indexes(10000, [250, 300, 270])
+    # print(res)
+    # print(str(time.time() - start))

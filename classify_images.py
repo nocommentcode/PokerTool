@@ -9,7 +9,7 @@ from data.GGPokerHandHistory import GGPokerHandHistory
 from networks.StateDetector import StateDetector
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-STATE_DECTOR_NAME = "6_player_state_detector"
+STATE_DECTOR_NAME = "6_player_state_detector_new_crop"
 DIR_NAME = UN_CLASSIFIED_DIR
 # DIR_NAME = "images/unclassified_images_from_big_batch"
 NUM_PLAYERS = 6
@@ -88,10 +88,14 @@ class ImageClassification:
         classification = classification[1:]
         return classification
 
-    def classify(self, card_detector):
+    def classify(self, card_detector, prev_state):
         image = open_image(self.file_path)
 
         state = card_detector.get_state(image)
+
+        if prev_state is not None and prev_state.player_card_count == state.player_card_count and prev_state.table_card_count == state.table_card_count:
+            raise Exception(
+                f"Prev state == current state - {prev_state.player_card_count} {state.player_card_count}, {prev_state.table_card_count} {state.table_card_count}")
 
         classification = self.get_classification(
             state.player_card_count, state.table_card_count)
@@ -102,6 +106,7 @@ class ImageClassification:
         # plt.imshow(image)
         # plt.show()
         self.save_to_classified(image, classification)
+        return state
 
 
 def get_hand_histories():
@@ -145,12 +150,13 @@ if __name__ == "__main__":
 
     sucesses = 0
     failures = 0
+    prev_state = None
 
     with tqdm(images) as image_uuids:
         for uuid in image_uuids:
             try:
                 classification = ImageClassification(uuid, hands)
-                classification.classify(card_detector)
+                prev_state = classification.classify(card_detector, prev_state)
                 sucesses += 1
             except Exception as e:
                 print(e)

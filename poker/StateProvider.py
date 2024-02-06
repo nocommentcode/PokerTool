@@ -26,12 +26,12 @@ class StateProvider:
         self.pre_flop_charts = pre_flop_charts
 
     def take_screenshot(self):
-        # return pyautogui.screenshot()
+        return pyautogui.screenshot()
 
-        from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
-        from PIL.Image import open as open_image
-        import os
-        return open_image(os.path.join(CLASSIFIED_DIR, "0e155de8-601c-46e9-8fb8-85b6cb8a1ee1", 'image.png'))
+        # from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
+        # from PIL.Image import open as open_image
+        # import os
+        # return open_image(os.path.join(CLASSIFIED_DIR, "0e155de8-601c-46e9-8fb8-85b6cb8a1ee1", 'image.png'))
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()
@@ -89,7 +89,7 @@ class StateProvider:
         next_state, screenshot = self.get_next_state_consensus()
 
         if save_screenshots:
-            if next_state.game_stage != self.current_state.game_stage:
+            if self.current_state is None or next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
                 self.save_screenshot(screenshot)
 
         if self.current_state != next_state:

@@ -6,9 +6,11 @@ class StateTarget:
         self.uuid = uuid
 
         targets = {}
-        for value, type in zip(classification.split(','), StateTargetType):
-            targets[type] = int(value)
-
+        try:
+            for value, type in zip(classification.split(','), StateTargetType):
+                targets[type] = int(value)
+        except Exception as e:
+            raise Exception(str(e) + uuid)
         self.targets = targets
 
     def __getitem__(self, target_type):

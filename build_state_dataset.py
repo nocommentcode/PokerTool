@@ -11,8 +11,8 @@ from data.GGPokerHandHistory import GGPokerHandHistory
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 DATASET_NAME = "6_player_state_new_crop"
-# UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
-UNCLASSIDIED_NAME = "images/unclassified_images_from_big_batch_2"
+UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
+# UNCLASSIDIED_NAME = "images/unclassified_images_from_big_batch_2"
 NUM_PLAYERS = 6
 
 

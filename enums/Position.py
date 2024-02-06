@@ -20,6 +20,18 @@ class Position(Enum):
         }
         return position_names[self]
 
+    def get_relative_pos(self, index):
+        positions = [pos.value for pos in Position]
+        my_index = positions.index(self.value)
+        their_index = (my_index + index) % len(positions)
+        return positions[their_index]
+
+    @staticmethod
+    def from_dealer_pos_idx(dealer_pos):
+        positions = [Position.BTN, Position.CO, Position.HJ,
+                     Position.UTG, Position.BB, Position.SB]
+        return positions[dealer_pos]
+
     @staticmethod
     def from_string(string):
         positions = {

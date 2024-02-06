@@ -37,7 +37,7 @@ def run(model, dataloader, device, is_train, debug):
             player_target, _ = y[StateTargetType.NumPlayerCards]
             player_loss = loss_func(player_cards, player_target)
 
-            table_target, _ = y[StateTargetType.NumTableCards]
+            table_target, uuids = y[StateTargetType.NumTableCards]
             table_loss = loss_func(table_cards, table_target)
 
             dealer_target, _ = y[StateTargetType.DealerPosition]
@@ -83,8 +83,8 @@ def run(model, dataloader, device, is_train, debug):
                 total_samples += len(x)
 
                 if debug:
-                    indicies = (torch.argmax(softmax(num_opponents), 1)
-                                == opponent_target).long()
+                    indicies = (torch.argmax(softmax(table_cards), 1)
+                                == table_target)
                     uuids = np.array(uuids)
                     print(uuids[indicies.detach().cpu().numpy()])
 

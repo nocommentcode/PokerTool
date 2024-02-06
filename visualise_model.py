@@ -42,7 +42,7 @@ if __name__ == "__main__":
     charts = charts[GAME_TYPE]
 
     state_provider = StateProvider(state_detector, model, GAME_TYPE, charts)
-    dir = Path("images/unclassified_images")
+    dir = Path("images/classified_images")
     remaining = list(listdir(dir))[23:]
     for fnamne in remaining:
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         #     print(classi)
 
         # show
-        image = image_open(Path(f"{dir}/{fnamne}"))
+        image = image_open(Path(f"{dir}/{fnamne}/image.png"))
         state_provider.print_for_screenshot_(image)
 
         plt.imshow(image)
