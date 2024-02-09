@@ -4,15 +4,17 @@ import torch
 from tqdm import tqdm
 from data import DATASET_DIR
 from data.PokerDataset import STATE_TARGET, data_loader_factory
-from enums.StateTargetType import StateTargetType, OPPONENTS
+from enums.GameType import GameType
+from enums.StateTargetType import StateTargetType
 from networks.StateDetector import StateDetector
 import torch.nn as nn
 
-DATASET_NAME = '6_player_state_new_crop'
+DATASET_NAME = '9_player_state'
 BATCH_SIZE = 5
 EPOCHS = 50
 LR = 0.001
-SAVE_NAME = '6_player_state_detector_new_crop'
+SAVE_NAME = '9_player_state_detector'
+GAME_TYPE = GameType.NinePlayer
 
 
 def run(model, dataloader, device, is_train, debug):
@@ -43,16 +45,13 @@ def run(model, dataloader, device, is_train, debug):
             dealer_target, _ = y[StateTargetType.DealerPosition]
             dealer_loss = loss_func(dealer_pos, dealer_target)
 
+            opponent_targets, _ = y[StateTargetType.Opponents]
             opponent_loss_fc = nn.BCEWithLogitsLoss()
-            opponent_targets = [y[opponent][0]
-                                for opponent in OPPONENTS]
-            opponent_targets = torch.stack(opponent_targets)
-            opponent_targets = opponent_targets.swapaxes(0, 1)
-            opponent_loss = [opponent_loss_fc(pred, target.to(torch.float32)) for pred, target in zip(
-                opponents, opponent_targets)]
+            opponent_loss = opponent_loss_fc(
+                opponents, opponent_targets.to(torch.float32))
 
             batch_loss = player_loss + table_loss + \
-                dealer_loss + sum(opponent_loss)
+                dealer_loss + opponent_loss
 
             if is_train:
                 model.optim.zero_grad()
@@ -68,11 +67,9 @@ def run(model, dataloader, device, is_train, debug):
                     torch.argmax(softmax(table_cards), 1) == table_target).long().sum()
                 num_correct_dealer = (
                     torch.argmax(softmax(dealer_pos), 1) == dealer_target).long().sum()
-                pred_opponents = torch.stack(
-                    [sigmoid(opponent) > 0.5 for opponent in opponents])
 
-                num_correct_opponent = (
-                    pred_opponents == opponent_targets).long().sum() / 5
+                num_correct_opponent = (torch.flatten(
+                    sigmoid(opponents) > 0.5) == torch.flatten(opponent_targets)).long().sum()
 
                 total_correct_player += num_correct_player.item()
                 total_correct_table += num_correct_target.item()
@@ -92,7 +89,8 @@ def run(model, dataloader, device, is_train, debug):
     print(f"Player_accuracy: {total_correct_player*100/total_samples}")
     print(f"Table_accuracy: {total_correct_table*100/total_samples}")
     print(f"Dealer_accuracy: {total_correct_dealer*100/total_samples}")
-    print(f"Opponent_accuracy: {total_correct_opponents*100/total_samples}")
+    print(
+        f"Opponent_accuracy: {total_correct_opponents*100/(GAME_TYPE.get_num_players()*total_samples)}")
     print("\n\n")
 
 
@@ -108,7 +106,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else 'cpu'
     print(f"Training on {device} for {EPOCHS}")
 
-    network = StateDetector(lr=LR)
+    network = StateDetector(lr=LR, game_type=GAME_TYPE)
     network.to(device)
 
     for e in range(EPOCHS):

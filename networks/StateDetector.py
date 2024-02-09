@@ -10,8 +10,10 @@ from poker.GameState import GameState
 
 
 class StateDetector(nn.Module):
-    def __init__(self, input_shape=TABLE_FINAL_DIMENTIONS, lr=0.001, player_count=6):
+    def __init__(self, game_type, input_shape=TABLE_FINAL_DIMENTIONS, lr=0.001):
         super().__init__()
+        self.game_type = game_type
+
         self.encoder = nn.Sequential(
             nn.Conv2d(3, 16, 3),
             nn.ReLU(),
@@ -45,7 +47,7 @@ class StateDetector(nn.Module):
             nn.Linear(output_dim, 128),
             nn.ReLU(),
             nn.Dropout(),
-            nn.Linear(128, player_count)
+            nn.Linear(128, game_type.get_num_players())
         )
 
         self.num_opponents_fc = nn.Sequential(
@@ -53,7 +55,7 @@ class StateDetector(nn.Module):
             nn.ReLU(),
             nn.Dropout(),
             nn.Linear(128, 64),
-            nn.Linear(64, player_count-1)
+            nn.Linear(64, game_type.get_num_players()-1)
         )
 
         self.optim = torch.optim.Adam(self.parameters(), lr=lr)
@@ -71,9 +73,9 @@ class StateDetector(nn.Module):
         torch.save(self.state_dict(), filename)
 
     @staticmethod
-    def load(filename: str):
+    def load(filename: str, game_type):
         filename = os.path.join(BASE_WIEGHT_DIR, f'{filename}.pth')
-        model = StateDetector()
+        model = StateDetector(game_type=game_type)
         state_dict = torch.load(filename)
         model.load_state_dict(state_dict, assign=True)
         return model
@@ -97,4 +99,4 @@ class StateDetector(nn.Module):
         opponents = [(sigmoid(opponent) > 0.5).item()
                      for opponent in opponents[0]]
 
-        return GameState(player_count.item(), table_count.item(), dealer_pos.item(), np.array(opponents))
+        return GameState(self.game_type, player_count.item(), table_count.item(), dealer_pos.item(), np.array(opponents))

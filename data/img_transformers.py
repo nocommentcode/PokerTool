@@ -70,7 +70,23 @@ cards_transformer = transforms.Compose(
 if __name__ == "__main__":
     import os
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+    cards_transformer = transforms.Compose(
+        (to_tensor,  crop_table_transform,
+         crop_cards_transform, cards_resize, convert_to_float, to_image))
+    test = transforms.Compose(
+        (to_tensor, transforms.Resize((1600, 2560), antialias=False), to_image))
+    img = open(os.path.join("images/unclassified_images",
+                            "25d0b29a-6ad3-48a0-a45a-adb01b761b8a.png"))
+    # "678edd6f-eec3-4468-855c-b34c9838728f.png"))
 
+    # img = test(img)
+    plt.imshow(img)
+    plt.show()
+
+    img = cards_transformer(img)
+    plt.imshow(img)
+    plt.show()
+    dfsd
     # load an image
     dir = Path("images/classified_images")
     remaining = listdir(dir)

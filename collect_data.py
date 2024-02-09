@@ -1,4 +1,5 @@
 import torch
+from enums.GameType import GameType
 from networks.StateDetector import StateDetector
 from time import sleep
 import pyautogui
@@ -8,6 +9,8 @@ import numpy as np
 import pandas as pd
 
 from networks.PokerNetwork import PokerNetwork
+
+GAME_TYPE = GameType.SixPlayer
 
 
 def save_screenshot(screenshot):
@@ -20,14 +23,8 @@ def take_screenshot():
 
 
 def run():
-    card_detector = StateDetector.load("card_detector")
+    card_detector = StateDetector.load(STATE_DECTOR_NAME)
     card_detector.eval()
-
-    model = PokerNetwork.load("6_player", conv_channels=[
-                              16, 32], fc_layers=[40])
-    model.eval()
-
-    gs_fact = GameStateFactory(model, 'cuda')
 
     total_counts = np.zeros((3, 6))
 

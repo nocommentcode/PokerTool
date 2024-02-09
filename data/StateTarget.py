@@ -6,9 +6,13 @@ class StateTarget:
         self.uuid = uuid
 
         targets = {}
+
         try:
-            for value, type in zip(classification.split(','), StateTargetType):
-                targets[type] = int(value)
+            labels = classification.split(',')
+            targets[StateTargetType.DealerPosition] = int(labels[0])
+            targets[StateTargetType.NumPlayerCards] = int(labels[1])
+            targets[StateTargetType.NumTableCards] = int(labels[2])
+            targets[StateTargetType.Opponents] = [int(op) for op in labels[3:]]
         except Exception as e:
             raise Exception(str(e) + uuid)
         self.targets = targets

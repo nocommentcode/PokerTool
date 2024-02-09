@@ -1,3 +1,6 @@
+from PIL.Image import Image
+import numpy as np
+from data.img_transformers import cards_transformer
 import torch
 from data.img_transformers import table_transformer
 import datetime
@@ -8,12 +11,48 @@ from data import DATASET_DIR, UN_CLASSIFIED_DIR
 import os
 from PIL.Image import open as open_image
 from data.GGPokerHandHistory import GGPokerHandHistory
+from enums.GameType import GameType
+from enums.PokerTargetType import PLAYER_CARDS, TABLE_CARDS
+from enums.Suit import Suit
+from networks.PokerNetwork import PokerNetwork
+from networks.model_factory import model_factory
+import cv2
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-DATASET_NAME = "6_player_state_new_crop"
+DATASET_NAME = "9_player_state"
 UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
 # UNCLASSIDIED_NAME = "images/unclassified_images_from_big_batch_2"
-NUM_PLAYERS = 6
+GAME_TYPE = GameType.NinePlayer
+
+
+def player_card_detection(image: Image):
+    points = (
+        (400, 848),
+        (166, 513),
+        (362, 244),
+        (728, 151),
+        (1080, 151),
+        (1450, 230),
+        (1649, 517),
+        (1418, 844)
+    )
+
+    upper = np.array([150, 62, 62], np.uint8)
+    lower = np.array([112, 40, 40], np.uint8)
+    pixels = np.asarray(image)
+
+    def player_has_cards(index):
+        x, y = points[index]
+        point = pixels[y, x]
+        print(point)
+
+        mask = cv2.inRange(point, lower, upper)
+        if len(np.argwhere(mask)) == 3:
+            return "1"
+        else:
+            return "0"
+
+    return [player_has_cards(i) for i in range(8)]
 
 
 class StateClassification:
@@ -70,26 +109,81 @@ class StateClassification:
 
         return card_2, card_1
 
-    def get_classification(self):
-        print(f"\n{self.hand.dealer_pos}  player_card  table_cards  num_players")
-        user_input = input("->")
-        user_input = user_input.split(" ")
-        player_cards = user_input[0]
-        table_cards = user_input[1]
-        opponents = [int(char) for char in user_input[2]]
-        opponents = ["0" if i not in opponents else "1" for i in range(1, 6)]
+    def get_classification(self, predictions, image):
 
+        card, table = predictions
+
+        player_cards = str(card)
+        table_cards = str(table)
+        opponents = player_card_detection(image)
+
+        # opponents = ["0" if i not in opponents else "1" for i in range(
+        # 1, GAME_TYPE.get_num_players())]
         labels = [str(self.hand.dealer_pos)] + \
             [player_cards] + [table_cards] + opponents
+
         return ",".join(labels)
+    # if predictions is None:
+        #     print(
+        #         f"\n{self.hand.dealer_pos}  player_card  table_cards  num_players")
+        #     user_input = input("->")
+        #     user_input = user_input.split(" ")
+        #     player_cards = user_input[0]
+        #     table_cards = user_input[1]
+        #     opponents = [int(char) for char in user_input[2]]
 
-    def classify(self, plt_object):
+        # else:
+        #     card, table = predictions
+        #     print(
+        #         f"\n{self.hand.dealer_pos}  {card}  {table}  num_players (empty to change)")
+        #     user_input = input("->")
+
+        #     # change predictions
+        #     if user_input == "":
+        #         return self.get_classification(None)
+
+        #     player_cards = str(card)
+        #     table_cards = str(table)
+        #     opponents = [int(char) for char in user_input]
+
+        # opponents = ["0" if i not in opponents else "1" for i in range(
+        #     1, GAME_TYPE.get_num_players())]
+        # labels = [str(self.hand.dealer_pos)] + \
+        #     [player_cards] + [table_cards] + opponents
+
+        # return ",".join(labels)
+
+    def pred_counts_via_model(self, image, poker_network: PokerNetwork):
+        transformed = cards_transformer(image)
+        batch = transformed.unsqueeze(0)
+        batch = batch.to(torch.float32).to("cuda")
+
+        predictions = poker_network.predict(batch)
+        card_count = 0
+        for type in PLAYER_CARDS:
+            if predictions[type.value].suit != Suit.Empty:
+                card_count += 1
+
+        table_count = 0
+        for type in TABLE_CARDS:
+            if predictions[type.value].suit != Suit.Empty:
+                table_count += 1
+
+        return card_count, table_count
+
+    def classify(self, plt_object, poker_network=None):
         image = open_image(self.file_path)
-        plt_object.set_data(image)
-        plt.draw()
+        # plt_object.set_data(image)
+        # plt.draw()
+        # plt.imshow(image)
 
-        classification = self.get_classification()
-        print(classification)
+        predictions = None
+        if poker_network is not None:
+            predictions = self.pred_counts_via_model(image, poker_network)
+
+        classification = self.get_classification(predictions, image)
+        # print(classification)
+        # plt.show()
         self.save_to_dataset(image, classification)
 
 
@@ -97,7 +191,8 @@ def get_hand_histories():
     with open('poker.txt') as f:
         text = f.read()
         hands = text.split('\n\n')
-        parsed = [GGPokerHandHistory(hand, NUM_PLAYERS) for hand in hands[:-1]]
+        parsed = [GGPokerHandHistory(
+            hand, GAME_TYPE.get_num_players()) for hand in hands[:-1]]
         sorted_parsed = list(
             sorted(parsed, key=lambda hand: hand.start_time))
         return sorted_parsed
@@ -113,6 +208,8 @@ def get_image_uuids():
 
 
 if __name__ == "__main__":
+    _, model = model_factory(GameType.SixPlayer)
+
     hands = get_hand_histories()
     images = get_image_uuids()
     image_index = 0
@@ -129,7 +226,7 @@ if __name__ == "__main__":
         for uuid in image_uuids:
             try:
                 classification = StateClassification(uuid, hands)
-                classification.classify(plt_object)
+                classification.classify(plt_object, model)
                 sucesses += 1
             except Exception as e:
                 print(e)

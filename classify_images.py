@@ -6,13 +6,14 @@ from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
 import os
 from PIL.Image import open as open_image
 from data.GGPokerHandHistory import GGPokerHandHistory
+from enums.GameType import GameType
 from networks.StateDetector import StateDetector
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 STATE_DECTOR_NAME = "6_player_state_detector_new_crop"
 DIR_NAME = UN_CLASSIFIED_DIR
 # DIR_NAME = "images/unclassified_images_from_big_batch"
-NUM_PLAYERS = 6
+GAME_TYPE = GameType.SixPlayer
 
 
 class ImageClassification:
@@ -113,7 +114,8 @@ def get_hand_histories():
     with open('poker.txt') as f:
         text = f.read()
         hands = text.split('\n\n')
-        parsed = [GGPokerHandHistory(hand, NUM_PLAYERS) for hand in hands[:-1]]
+        parsed = [GGPokerHandHistory(
+            hand, GAME_TYPE.get_num_players()) for hand in hands[:-1]]
         sorted_parsed = list(
             sorted(parsed, key=lambda hand: hand.start_time))
         return sorted_parsed
@@ -141,7 +143,8 @@ def delete_all_unclassified():
 
 
 if __name__ == "__main__":
-    card_detector = StateDetector.load(STATE_DECTOR_NAME)
+    card_detector = StateDetector.load(
+        STATE_DECTOR_NAME, game_type=GAME_TYPE)
     card_detector.eval()
 
     hands = get_hand_histories()

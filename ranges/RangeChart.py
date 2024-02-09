@@ -17,14 +17,17 @@ class RangeChart:
         self.actions = actions
 
     def __getitem__(self, hand: Hand) -> Any:
-        card_1, card_2 = hand.cards()
+        try:
+            card_1, card_2 = hand.cards()
 
-        ax_1 = card_1.value.value
-        ax_2 = card_2.value.value
-        suited_ax = int(hand.is_suited() or hand.is_pokets())
+            ax_1 = card_1.value.value
+            ax_2 = card_2.value.value
+            suited_ax = int(hand.is_suited() or hand.is_pokets())
 
-        probabilities = self.chart[ax_1, ax_2, suited_ax]
-        return np.random.choice(self.actions, p=probabilities)
+            probabilities = self.chart[ax_1, ax_2, suited_ax]
+            return np.random.choice(self.actions, p=probabilities)
+        except Exception as e:
+            return f"{str(hand)} - Error ({probabilities})"
 
 
 def read_actions(game_type, position, action):

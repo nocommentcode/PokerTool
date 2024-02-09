@@ -2,10 +2,8 @@ import torch
 from networks.model_factory import model_factory
 from poker.StateProvider import StateProvider
 from enums.GameType import GameType
-from networks.StateDetector import StateDetector
 from time import sleep
 
-from networks.PokerNetwork import PokerNetwork
 from ranges.RangeChart import load_range_charts
 
 
@@ -21,8 +19,10 @@ def run():
     state_provider = StateProvider(state_detector, model, GAME_TYPE, charts)
 
     while True:
-        state_provider.tick(save_screenshots=True)
-        sleep(1)
+        # state_provider.tick(save_screenshots=True)
+        validation_state, screenshot = state_provider.get_screenshot_and_state()
+        state_provider.save_screenshot(screenshot)
+        sleep(2)
 
 
 if __name__ == "__main__":

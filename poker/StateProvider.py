@@ -89,7 +89,9 @@ class StateProvider:
         next_state, screenshot = self.get_next_state_consensus()
 
         if save_screenshots:
-            if self.current_state is None or next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
+            # if self.current_state is None or next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
+            if self.current_state != next_state:
+                print(f"Saved screenshot")
                 self.save_screenshot(screenshot)
 
         if self.current_state != next_state:
