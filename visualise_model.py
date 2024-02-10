@@ -2,13 +2,16 @@ from os import listdir
 from pathlib import Path
 import random
 from matplotlib import pyplot as plt
-from data.PokerTarget import PokerTarget
-from enums.TargetType import TargetType
-from networks.PokerNetwork import PokerNetwork
-from data.img_transformers import poker_img_transformer
 from PIL.Image import open as image_open
+from enums.PokerTargetType import PokerTargetType
 
-from poker.GameStateFactory import GameStateFactory
+from enums.GameType import GameType
+from networks.model_factory import model_factory
+from poker.StateProvider import StateProvider
+from ranges.RangeChart import load_range_charts
+
+GAME_TYPE = GameType.SixPlayer
+
 
 if __name__ == "__main__":
     # model = PokerNetwork.load("6_player")
@@ -33,25 +36,24 @@ if __name__ == "__main__":
     # transformed = poker_img_transformer(image)
     # plt.imshow(image)
     # plt.show()
+    state_detector, model = model_factory(GAME_TYPE)
 
+    charts = load_range_charts()
+    charts = charts[GAME_TYPE]
+
+    state_provider = StateProvider(state_detector, model, GAME_TYPE, charts)
     dir = Path("images/classified_images")
-    remaining = list(listdir(dir))
+    remaining = list(listdir(dir))[23:]
     for fnamne in remaining:
 
         # get game state
-        with open(Path(f"{dir}/{fnamne}/classification.txt")) as f:
-            classi = f.read()
-            target = PokerTarget(classi, '')
-            suit1, value1, _ = target[TargetType.Player_card_1]
-            _, value2, _ = target[TargetType.Player_card_2]
-            problem_values = [1, 4, 9, 13]
-            # if value1 not in problem_values or value2 not in problem_values:
-            if suit1 != 3:
-                continue
-            print(fnamne)
-            print(classi)
+        # with open(Path(f"{dir}/{fnamne}/classification.txt")) as f:
+        #     classi = f.read()
+        #     print(classi)
 
         # show
         image = image_open(Path(f"{dir}/{fnamne}/image.png"))
+        state_provider.print_for_screenshot_(image)
+
         plt.imshow(image)
         plt.show()

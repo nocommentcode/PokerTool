@@ -1,25 +1,26 @@
 import shutil
-import matplotlib.pyplot as plt
 import datetime
 from pathlib import Path
-
 from tqdm import tqdm
-
 from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
 import os
 from PIL.Image import open as open_image
-
 from data.GGPokerHandHistory import GGPokerHandHistory
-from enums.Value import Value
-from networks.CardDetector import CardDetector
+from enums.GameType import GameType
+from networks.StateDetector import StateDetector
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+STATE_DECTOR_NAME = "6_player_state_detector_new_crop"
+DIR_NAME = UN_CLASSIFIED_DIR
+# DIR_NAME = "images/unclassified_images_from_big_batch"
+GAME_TYPE = GameType.SixPlayer
 
 
 class ImageClassification:
     def __init__(self, uuid, hands):
         self.uuid = uuid
         self.file_path = os.path.join(
-            UN_CLASSIFIED_DIR, f"{self.uuid}.png")
+            DIR_NAME, f"{self.uuid}.png")
 
         self.hand = self.get_corresponding_hand(hands)
 
@@ -37,16 +38,6 @@ class ImageClassification:
             next_hand = hands[hand_idx+1]
 
         if (next_hand.start_time - time_created).total_seconds() < 3 or (time_created - current_hand.start_time).total_seconds() < 3:
-            # early = (next_hand.start_time - time_created).total_seconds() < 5
-            # late = (time_created - current_hand.start_time).total_seconds() < 5
-            # print(
-            #     f"\n{current_hand.player_cards[0]},{current_hand.player_cards[1]}")
-            # print(
-            #     f"{current_hand.table_cards[0]}{current_hand.table_cards[1]}")
-            # print("late" if early else "early")
-            # image = open_image(self.file_path)
-            # plt.imshow(image)
-            # plt.show()
             raise Exception(
                 f"Screenshot time ({time_created}) too close to end of hand ({next_hand.start_time }), skipping...")
 
@@ -61,11 +52,6 @@ class ImageClassification:
         with open(f"{dir}/classification.txt", 'w') as f:
             f.write(classification)
             f.close()
-
-    def count_cards_using_model(self, image, card_detector):
-        pred_player_count, pred_table_count = card_detector.get_card_counts(
-            image)
-        return pred_player_count, pred_table_count
 
     def sort_player_cards_from_hand(self):
         card_1, card_2 = self.hand.player_cards
@@ -85,7 +71,7 @@ class ImageClassification:
         return card_2, card_1
 
     def get_classification(self, player_cards, table_cards):
-        classification = f"{self.hand.num_players},{self.hand.dealer_pos}"
+        classification = ""
 
         sorted_player_cards = self.sort_player_cards_from_hand()
         for i in range(2):
@@ -100,43 +86,53 @@ class ImageClassification:
                 card = self.hand.table_cards[i]
                 classification += f"{str(card.value)}{card.suit.to_non_symbol_string()}"
         classification += ","
-
+        classification = classification[1:]
         return classification
 
-    def classify(self, card_detector):
+    def classify(self, card_detector, prev_state):
         image = open_image(self.file_path)
-        player_cards, table_cards = self.count_cards_using_model(
-            image, card_detector)
 
-        classification = self.get_classification(player_cards, table_cards)
-        # print(f"\n\n\n\n\n{classification}")
+        state = card_detector.get_state(image)
+
+        if prev_state is not None and prev_state.player_card_count == state.player_card_count and prev_state.table_card_count == state.table_card_count:
+            raise Exception(
+                f"Prev state == current state - {prev_state.player_card_count} {state.player_card_count}, {prev_state.table_card_count} {state.table_card_count}")
+
+        classification = self.get_classification(
+            state.player_card_count, state.table_card_count)
+        # print(
+        #     f"\nDealer: {state.dealer_pos}, Player: {state.player_card_count}, Table: {state.table_card_count}, Opponents:{state.num_opponents}")
+        # print(classification)
+        # import matplotlib.pyplot as plt
         # plt.imshow(image)
         # plt.show()
         self.save_to_classified(image, classification)
+        return state
 
 
 def get_hand_histories():
     with open('poker.txt') as f:
         text = f.read()
         hands = text.split('\n\n')
-        parsed = [GGPokerHandHistory(hand) for hand in hands[:-1]]
+        parsed = [GGPokerHandHistory(
+            hand, GAME_TYPE.get_num_players()) for hand in hands[:-1]]
         sorted_parsed = list(
             sorted(parsed, key=lambda hand: hand.start_time))
         return sorted_parsed
 
 
 def get_image_uuids():
-    dir = Path(f"{UN_CLASSIFIED_DIR}")
+    dir = Path(f"{DIR_NAME}")
     files = os.listdir(dir)
     files = [f[:-4] for f in files]
     files.sort(key=lambda x: os.path.getmtime(
-        os.path.join(UN_CLASSIFIED_DIR, f"{x}.png")))
+        os.path.join(DIR_NAME, f"{x}.png")))
     return files
 
 
 def delete_all_unclassified():
-    for file in os.listdir(Path(f"{UN_CLASSIFIED_DIR}")):
-        path = Path(f"{UN_CLASSIFIED_DIR}/{file}")
+    for file in os.listdir(Path(f"{DIR_NAME}")):
+        path = Path(f"{DIR_NAME}/{file}")
         try:
             if os.path.isfile(path) or os.path.islink(path):
                 os.unlink(path)
@@ -147,7 +143,8 @@ def delete_all_unclassified():
 
 
 if __name__ == "__main__":
-    card_detector = CardDetector.load("card_detector")
+    card_detector = StateDetector.load(
+        STATE_DECTOR_NAME, game_type=GAME_TYPE)
     card_detector.eval()
 
     hands = get_hand_histories()
@@ -156,12 +153,13 @@ if __name__ == "__main__":
 
     sucesses = 0
     failures = 0
+    prev_state = None
 
     with tqdm(images) as image_uuids:
         for uuid in image_uuids:
             try:
                 classification = ImageClassification(uuid, hands)
-                classification.classify(card_detector)
+                prev_state = classification.classify(card_detector, prev_state)
                 sucesses += 1
             except Exception as e:
                 print(e)

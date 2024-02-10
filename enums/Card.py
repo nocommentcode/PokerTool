@@ -15,3 +15,12 @@ class Card:
             return False
 
         return self.suit == other.suit and self.value == other.value
+
+    def __gt__(self, other):
+        if type(other) != Card:
+            return False
+
+        if self.value == other.value:
+            return self.suit > other.suit
+
+        return self.value > other.value

@@ -10,3 +10,8 @@ Path(CLASSIFIED_DIR).mkdir(parents=True, exist_ok=True)
 
 DATASET_DIR = BASE_DATA_DIR + "/" + "datasets"
 Path(DATASET_DIR).mkdir(parents=True, exist_ok=True)
+
+
+IMAGE_NAME = "image.png"
+POKER_TARGET_CLASSIFICATION = "poker_target.txt"
+STATE_TARGET_CLASSIFICATION = "state_target.txt"

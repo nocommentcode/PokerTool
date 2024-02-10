@@ -3,34 +3,34 @@ from enum import Enum
 
 class Action(Enum):
     RFI = "rfi"
+    RaiseSB = "raise_sb"
+    RaiseBB = "raise_bb"
     RaiseUTG = "raise_utg"
     RaiseHJ = "raise_hj"
     RaiseCO = "raise_co"
     RaiseBTN = "raise_btn"
-    RaiseSB = "raise_sb"
-    RaiseBB = "raise_bb"
 
     def __str__(self):
         if self.value == Action.RFI.value:
             return "First to raise"
 
         if self.value == Action.RaiseUTG.value:
-            return "Raised by 3"
+            return "Raised by UTG"
 
         if self.value == Action.RaiseHJ.value:
-            return "Raised by 4"
+            return "Raised by HJ"
 
         if self.value == Action.RaiseCO.value:
-            return "Raised by 5"
+            return "Raised by CO"
 
         if self.value == Action.RaiseBTN.value:
             return "Raised by BTN"
 
         if self.value == Action.RaiseSB.value:
-            return "Raised by 1"
+            return "Raised by SB"
 
         if self.value == Action.RaiseBB.value:
-            return "Raised by 2"
+            return "Raised by BB"
 
     @staticmethod
     def from_string(string):

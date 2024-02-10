@@ -1,54 +1,52 @@
-from PIL.Image import open as open_image
-import os
 import torch
+from networks.model_factory import model_factory
+from poker.StateProvider import StateProvider
 from enums.GameType import GameType
-from networks.CardDetector import CardDetector
 from time import sleep
-import pyautogui
-import uuid
-from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
-import numpy as np
-import pandas as pd
 
-from networks.PokerNetwork import PokerNetwork
-from poker.GameStateFactory import GameStateFactory
 from ranges.RangeChart import load_range_charts
+import msvcrt
 
-MODEL_NAME = '6_player_pc_dp'
-CARD_DETECTOR_NAME = "card_detector"
-GAME_TYPE = GameType.SixPlayer
+GAME_TYPE = GameType.NinePlayer
+BLINDS = 20
 
 
-def take_screenshot():
-    # return pyautogui.screenshot()
-    return open_image(os.path.join(UN_CLASSIFIED_DIR, '3e1597ea-8e32-4cef-9453-dd276c5039f5.png'))
+def check_change_blinds():
+    input = ""
+    while msvcrt.kbhit():
+        input += msvcrt.getwch()
+
+    if len(input) < 3:
+        return None
+
+    if input[0] != "b":
+        return None
+
+    return int(input[1:])
 
 
 def run():
-    card_detector = CardDetector.load(CARD_DETECTOR_NAME)
-    card_detector.eval()
+    state_detector, model = model_factory(GAME_TYPE)
 
-    model = PokerNetwork.load(MODEL_NAME, conv_channels=[
-                              16, 32], fc_layers=[64])
-    model.eval()
+    charts = load_range_charts(GAME_TYPE, BLINDS)
+    charts = charts
 
-    charts = load_range_charts()
-    charts = charts[GAME_TYPE]
-    gs_fact = GameStateFactory(model, card_detector, GAME_TYPE, charts)
-
-    current_player_count, current_table_count = 1, 0
+    state_provider = StateProvider(state_detector, model, GAME_TYPE, charts)
 
     while True:
-        screenshot = take_screenshot()
-        pred_player_count, pred_table_count = card_detector.get_card_counts(
-            screenshot)
-
-        if pred_player_count != current_player_count or pred_table_count != current_table_count:
-            print(str(gs_fact.get_game_state(screenshot,
-                  pred_player_count, pred_table_count)))
-            current_player_count, current_table_count = pred_player_count, pred_table_count
+        state_provider.tick(save_screenshots=True)
 
         sleep(1)
+
+        try:
+            new_blinds = check_change_blinds()
+            if new_blinds is not None:
+                print(f"Changing blinds to {new_blinds}")
+                new_charts = load_range_charts(GAME_TYPE, new_blinds)
+                state_provider.set_charts(new_charts)
+
+        except Exception as e:
+            print(f"Error - {str(e)}")
 
 
 if __name__ == "__main__":

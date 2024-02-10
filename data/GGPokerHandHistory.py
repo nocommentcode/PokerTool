@@ -6,10 +6,10 @@ from enums.Suit import Suit
 
 
 class GGPokerHandHistory:
-    def __init__(self, text):
+    def __init__(self, text, total_seats):
         self.num_players = self.extract_num_player(text)
         self.start_time = self.extract_start_time(text)
-        self.dealer_pos = self.extract_dealer_pos(text)
+        self.dealer_pos = self.extract_dealer_pos(text, total_seats)
         self.player_cards = list(reversed([self.extract_player_card(
             text, 0), self.extract_player_card(text, 1)]))
         self.table_cards = [self.extract_table_cards(text, 0),
@@ -29,8 +29,8 @@ class GGPokerHandHistory:
         start_time = datetime.strptime(timestamp, '%Y/%m/%d %H:%M:%S')
         return start_time
 
-    def extract_dealer_pos(self, text):
-        all_seats = re.findall(r"Seat (?P<seat_no>\d):", text)
+    def extract_dealer_pos(self, text, total_seats):
+        all_seats = [str(i + 1) for i in range(total_seats)]
 
         my_seat = re.search(r"Seat (?P<seat_no>\d): Hero", text)
         my_seat = my_seat.group('seat_no')

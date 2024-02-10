@@ -64,6 +64,7 @@ class Suit(Enum):
         # diamond > club
         # diamond > heart
         # spade > heart
+        # spade > club
         # spade > diamond
         suit_order = [Suit.Clubs.value,
                       Suit.Hearts.value,

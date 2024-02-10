@@ -1,27 +1,50 @@
 from enum import Enum
 
+from enums.GameType import GameType
+
 
 class Position(Enum):
     UTG = "utg"
+    UTG1 = "utg_1"
+    UTG2 = "utg_2"
+    LJ = "lj"
     HJ = "hj"
     CO = "co"
     BTN = "btn"
     SB = "sb"
     BB = "bb"
 
-    @staticmethod
-    def from_dealer_pos(dealer_pos):
-        positions = [Position.BTN, Position.SB, Position.BB,
-                     Position.UTG, Position.HJ, Position.CO]
-        return positions[dealer_pos]
-
     def __str__(self):
-        return f"# {ORDERED_POSITIONS.index(self)}"
+        position_names = {
+            Position.BB: "Big-blind",
+            Position.SB: "Small-blind",
+            Position.UTG: "Under the gun",
+            Position.UTG1: "Under the gun + 1",
+            Position.UTG2: "Under the gun + 2",
+            Position.LJ: "Low jack",
+            Position.HJ: "High jack",
+            Position.CO: "Cutoff",
+            Position.BTN: "Button",
+        }
+        return position_names[self]
+
+    def get_relative_pos(self, index, game_type):
+        positions = GAME_TYPE_POSITIONS[game_type]
+        my_index = positions.index(self)
+        their_index = (my_index + index) % len(positions)
+        return positions[their_index]
+
+    @staticmethod
+    def from_dealer_pos_idx(dealer_pos, game_type):
+        return GAME_TYPE_POSITIONS[game_type][dealer_pos]
 
     @staticmethod
     def from_string(string):
         positions = {
             "utg": Position.UTG,
+            "utg_1": Position.UTG1,
+            "utg_2": Position.UTG2,
+            "lj": Position.LJ,
             "hj": Position.HJ,
             "co": Position.CO,
             "btn": Position.BTN,
@@ -30,5 +53,21 @@ class Position(Enum):
         return positions[string]
 
 
-ORDERED_POSITIONS = [Position.BTN, Position.SB, Position.BB,
-                     Position.UTG, Position.HJ, Position.CO]
+GAME_TYPE_POSITIONS = {
+    GameType.SixPlayer: [Position.BTN,
+                         Position.SB,
+                         Position.BB,
+                         Position.UTG,
+                         Position.HJ,
+                         Position.CO],
+
+    GameType.NinePlayer: [Position.BTN,
+                          Position.SB,
+                          Position.BB,
+                          Position.UTG,
+                          Position.UTG1,
+                          Position.UTG2,
+                          Position.LJ,
+                          Position.HJ,
+                          Position.CO]
+}
