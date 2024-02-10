@@ -186,10 +186,9 @@ class Evaluation:
         deck.random_shuffle(self.player_count)
         return self.run(deck, iterations)
 
-    def weighted_evaluation(self, strengths, looseness_factor=1.0, iterations=10000, debug=False):
+    def weighted_evaluation(self, hand_probabilities, iterations=10000, debug=False):
         deck = Deck(iterations)
         deck.remove_cards(self.player_cards)
         deck.remove_cards(self.table_cards)
-        deck.weighted_shuffle([strength * looseness_factor
-                               for strength in strengths])
+        deck.weighted_shuffle(hand_probabilities)
         return self.run(deck, iterations=iterations, debug=debug)

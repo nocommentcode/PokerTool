@@ -3,15 +3,18 @@ import time
 import numpy as np
 import numpy as np
 from enums.Card import Card
+from enums.GameType import GameType
 from enums.Suit import Suit
 from enums.Value import Value
 from enums.Hand import Hand
+from poker.GameState import GameState
 from ranges.Evaluation import Evaluation
 from ranges.Flush import Flush
 from ranges.FourOfAKind import FourOfAKind
 from ranges.FullHouse import FullHouse
 from ranges.HighCard import HighCard
 from ranges.Pair import Pair
+from ranges.PostFlopEvaluation import PostFlopEvaluation
 from ranges.Straight import Straight
 from ranges.StraightFlush import StraightFlush
 from ranges.ThreeOfAKind import ThreeOfAKind
@@ -235,27 +238,28 @@ def run_tests():
 if __name__ == "__main__":
     # run_tests()
     # print("tests passed")
-    hand = H("KS", "AH")
-    table_cards = [C("7S"), C("AH"), C("JS")]
+    hand = H("KH", "AH")
+    table_cards = [C("7H"), C("TH"), C("JH")]
+    # table_cards = []
     # opponents = [Position.SB, Position.BB, Position.SB]
     opponents = [400, 500]
 
     eval = Evaluation(hand, table_cards, 3)
 
-    # start = time.time()
-    # g = PostFlopEvaluation(hand, table_cards, GameState(
-    #     hand.cards(), table_cards, 0, [1, 3, 5]))
-    # print(str(g))
-    # print(f"Took {str(time.time() - start)} s")
+    start = time.time()
+    g = PostFlopEvaluation(hand, table_cards, GameState(
+        GameType.NinePlayer, hand.cards(), table_cards, 0, [1, 3, 5]))
+    print(str(g))
+    print(f"Took {str(time.time() - start)} s")
 
     # start = time.time()
     # weighted_result = eval.weighted_evaluation(opponents, 0.7)
     # print(
     #     f"Weighted tight: {weighted_result.equity} ({str(time.time() - start)})")
 
-    start = time.time()
-    weighted_result = eval.weighted_evaluation(opponents, debug=True)
-    print(f"Weighted: {weighted_result.equity} ({str(time.time() - start)})")
+    # start = time.time()
+    # weighted_result = eval.weighted_evaluation(opponents, debug=True)
+    # print(f"Weighted: {weighted_result.equity} ({str(time.time() - start)})")
 
     # start = time.time()
     # weighted_result = eval.weighted_evaluation(opponents, 1.4)

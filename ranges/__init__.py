@@ -8,3 +8,4 @@ Path(BASE_STARTING_HAND_DIR).mkdir(parents=True, exist_ok=True)
 
 STARTING_HAND_FILENAME = "starting_hands.npy"
 STARTING_HAND_CLASHES_FILENAME = "starting_hands_clashes.npy"
+STARTING_HAND_PROBS = "starting_hand_probs.npy"

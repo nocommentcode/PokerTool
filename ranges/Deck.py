@@ -42,29 +42,30 @@ class Deck:
     def get_hands_still_in_deck(self):
         hands = np.load(os.path.join(
             BASE_STARTING_HAND_DIR, STARTING_HAND_FILENAME))
-        mask_card_1 = np.isin(hands[:, 0], self.deck)
-        mask_card_2 = np.isin(hands[:, 1], self.deck)
 
-        mask = np.logical_and(mask_card_1, mask_card_2)
-        hands = hands[mask]
+        # get indexes used by cards already delt
+        mask_card_1 = np.isin(hands[:, 0], self.deck, invert=True)
+        mask_card_2 = np.isin(hands[:, 1], self.deck, invert=True)
+        mask = np.logical_or(mask_card_1, mask_card_2)
+        delt_hand_indexes = np.where(mask)[0]
 
-        # for i, hand in enumerate(hands[:30]):
-        #     cards = [str(self.num_to_card(card)) for card in hand]
-        #     print(f"{i}: {' '.join(cards) }")
+        return hands, delt_hand_indexes
 
-        return hands
-
-    def get_opponent_hand_idx(self, strength, used_indexes):
+    def get_opponent_hand_idx(self, probs, used_indexes, delt_hand_indexes):
         def generate(count):
-            return np.random.randint(low=0,
-                                     high=strength,
-                                     size=(count))
+            return np.random.choice(len(probs),
+                                    p=probs,
+                                    size=count)
 
         def get_duplicates(hand_idxes):
             num_used = used_indexes.shape[1]
             equal_dims = []
             for i in range(num_used):
                 equal_dims.append(hand_idxes == used_indexes[:, i])
+
+            equal_dims.append(
+                np.any(hand_idxes == delt_hand_indexes[:, None], 0))
+
             equal_dims = np.array(equal_dims)
             return np.logical_or.reduce(equal_dims)
 
@@ -77,38 +78,22 @@ class Deck:
 
         return hand_idxes
 
-    def weighted_shuffle(self, hand_strengths):
-        hands = self.get_hands_still_in_deck()
+    def weighted_shuffle(self, hand_probabilities):
+        hands, delt_hand_indexes = self.get_hands_still_in_deck()
         hand_clashes = np.load(os.path.join(
             BASE_STARTING_HAND_DIR, STARTING_HAND_CLASHES_FILENAME))
 
         opponent_hands = np.zeros((self.num, 2, 0))
         used_indexes = np.zeros((self.num, 0))
-
-        def get_hand_indicies_with_clashes(opponent_hand, hands):
-            card1 = np.logical_or(
-                opponent_hand[:, 0][:, None] == hands[:, 0],
-                opponent_hand[:, 0][:, None] == hands[:, 1],
-            )
-            card2 = np.logical_or(
-                opponent_hand[:, 1][:, None] == hands[:, 0],
-                opponent_hand[:, 1][:, None] == hands[:, 1],
-            )
-
-            both_cards = np.logical_or(card1, card2)
-            indicies = np.where(both_cards)[1].reshape((self.num, -1))
-            # indicies = hand_clashes[opponent_hand_idx]
-            return indicies
-
-        for strength in hand_strengths:
-            opponent_idx = self.get_opponent_hand_idx(strength, used_indexes)
+        for probs in hand_probabilities:
+            opponent_idx = self.get_opponent_hand_idx(
+                probs, used_indexes, delt_hand_indexes)
             opponent_hand = hands[opponent_idx]
             opponent_hands = np.append(opponent_hands,
                                        opponent_hand[:, :, None], 2)
 
             # remove indicies from hands
-            clashing_indicies = get_hand_indicies_with_clashes(
-                opponent_hand, hands)
+            clashing_indicies = hand_clashes[opponent_idx]
             used_indexes = np.append(
                 used_indexes, clashing_indicies,  1)
 
@@ -119,7 +104,7 @@ class Deck:
             deck = self.deck[deck_mask]
             self.deck = deck.reshape((self.num, -1))
 
-        self.random_shuffle(len(hand_strengths) + 1)
+        self.random_shuffle(len(hand_probabilities) + 1)
 
         opponent_hands = opponent_hands.reshape((self.num, -1), order="F")
         self.deck = np.append(opponent_hands, self.deck, 1)

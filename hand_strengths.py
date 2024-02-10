@@ -3,11 +3,12 @@ import numpy as np
 import numpy as np
 from enums.Card import Card
 from enums.GameType import GameType
-from enums.Position import Position
+from enums.OpponentAction import OpponentAction
+from enums.Position import GAME_TYPE_POSITIONS, Position
 from enums.Suit import Suit
 from enums.Value import Value
 from enums.Hand import Hand
-from ranges import BASE_STARTING_HAND_DIR, STARTING_HAND_CLASHES_FILENAME, STARTING_HAND_FILENAME
+from ranges import BASE_STARTING_HAND_DIR, STARTING_HAND_CLASHES_FILENAME, STARTING_HAND_FILENAME, STARTING_HAND_PROBS
 from ranges.Evaluation import Evaluation
 import os
 
@@ -95,14 +96,19 @@ def print_top_x_hands(x):
         print(Hand(card1, card2))
 
 
-def get_position_hand_range(position, blinds):
-    charts = load_range_charts(GameType.NinePlayer, blinds)
-    charts = charts[position.value]
+def get_position_hand_range(game_type: GameType, position, blinds):
+    charts = load_range_charts(game_type, blinds)
+    if position == Position.UTG2:
+        charts = charts[Position.UTG1.value]
+    else:
+        charts = charts[position.value]
 
     hands = np.load(os.path.join(
         BASE_STARTING_HAND_DIR, STARTING_HAND_FILENAME))
     hands = [Hand(*sorted([Evaluation.num_to_card(card) for card in hand], reverse=True))
-             for hand in hands]
+             for hand in hands][:1300]
+    # hands = [Hand(Card(Suit.Spades, Value.Seven),
+    #               Card(Suit.Hearts, Value.Five))]
 
     hand_probs = []
     for hand in hands:
@@ -117,29 +123,44 @@ def get_position_hand_range(position, blinds):
                         all_actions.append(a)
 
         probs = [0 for _ in range(len(all_actions))]
-        for action in charts.keys():
-            for opponent in charts[action].keys():
-                chart = charts[action][opponent]
+        for action in [OpponentAction.RFI, OpponentAction.RAISE]:
+            if action.value not in charts:
+                continue
+            for opponent in charts[action.value].keys():
+                chart = charts[action.value][opponent]
                 chart_actions = chart.get_actions()
-
                 for i, p in enumerate(chart.get_probs(hand)):
                     action_index = all_actions.index(chart_actions[i])
                     probs[action_index] += p
 
         total_p = sum(probs)
-        fold_index = [all_actions.index(fold) for fold in ['Fold']]
+        fold_index = [all_actions.index(fold) for fold in ['Fold', 'FOLD']]
         fold_p = sum([probs[i] for i in fold_index])
         call_p = (total_p - fold_p)/total_p
         hand_probs.append(call_p)
+        # print(f"{hand}: {call_p}")
 
     hand_probs = np.array(hand_probs)
-
     hand_probs /= hand_probs.sum()
-    for hand, prob in zip(hands[:200], hand_probs):
-        print(f"{hand}: {prob}")
+
+    file_name = f"{game_type.get_num_players()}_{blinds}_{position.value}_{STARTING_HAND_PROBS}"
+    path = os.path.join(BASE_STARTING_HAND_DIR, file_name)
+    np.save(path, hand_probs)
+
+    # for hand, prob in zip(hands, hand_probs):
+    #     print(f"{hand}: {prob}")
+
+
+def build_position_hand_ranges(game_type: GameType):
+    blinds = [10, 30, 80]
+    for blind in blinds:
+        for position in GAME_TYPE_POSITIONS[game_type]:
+            get_position_hand_range(game_type, position, blind)
 
 
 if __name__ == "__main__":
     # calculate_hand_clashing_indexes()
     # print_top_x_hands(500)
-    get_position_hand_range(Position.BTN, 20)
+    # get_position_hand_range(GameType.NinePlayer, Position.UTG1, 30)
+
+    build_position_hand_ranges(GameType.NinePlayer)
