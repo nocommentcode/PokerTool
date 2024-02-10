@@ -51,7 +51,7 @@ class Deck:
 
         return hands, delt_hand_indexes
 
-    def get_opponent_hand_idx(self, probs, used_indexes, delt_hand_indexes):
+    def get_opponent_hand_idx(self, probs, used_indexes):
         def generate(count):
             return np.random.choice(len(probs),
                                     p=probs,
@@ -62,11 +62,8 @@ class Deck:
             equal_dims = []
             for i in range(num_used):
                 equal_dims.append(hand_idxes == used_indexes[:, i])
-
-            equal_dims.append(
-                np.any(hand_idxes == delt_hand_indexes[:, None], 0))
-
             equal_dims = np.array(equal_dims)
+
             return np.logical_or.reduce(equal_dims)
 
         hand_idxes = generate(self.num)
@@ -86,8 +83,12 @@ class Deck:
         opponent_hands = np.zeros((self.num, 2, 0))
         used_indexes = np.zeros((self.num, 0))
         for probs in hand_probabilities:
+            # remove probability of delt cards
+            probs[delt_hand_indexes] = 0
+            probs /= probs.sum()
+
             opponent_idx = self.get_opponent_hand_idx(
-                probs, used_indexes, delt_hand_indexes)
+                probs, used_indexes)
             opponent_hand = hands[opponent_idx]
             opponent_hands = np.append(opponent_hands,
                                        opponent_hand[:, :, None], 2)

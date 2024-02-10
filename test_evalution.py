@@ -238,8 +238,8 @@ def run_tests():
 if __name__ == "__main__":
     # run_tests()
     # print("tests passed")
-    hand = H("KH", "AH")
-    table_cards = [C("7H"), C("TH"), C("JH")]
+    hand = H("KH", "QS")
+    table_cards = [C("7D"), C("QH"), C("JC")]
     # table_cards = []
     # opponents = [Position.SB, Position.BB, Position.SB]
     opponents = [400, 500]

@@ -106,7 +106,7 @@ def get_position_hand_range(game_type: GameType, position, blinds):
     hands = np.load(os.path.join(
         BASE_STARTING_HAND_DIR, STARTING_HAND_FILENAME))
     hands = [Hand(*sorted([Evaluation.num_to_card(card) for card in hand], reverse=True))
-             for hand in hands][:1300]
+             for hand in hands]
     # hands = [Hand(Card(Suit.Spades, Value.Seven),
     #               Card(Suit.Hearts, Value.Five))]
 
