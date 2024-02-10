@@ -25,13 +25,16 @@ class StateProvider:
         self.game_type = game_type
         self.pre_flop_charts = pre_flop_charts
 
-    def take_screenshot(self):
-        return pyautogui.screenshot()
+    def set_charts(self, charts):
+        self.pre_flop_charts = charts
 
-        # from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
-        # from PIL.Image import open as open_image
-        # import os
-        # return open_image(os.path.join(CLASSIFIED_DIR, "0e155de8-601c-46e9-8fb8-85b6cb8a1ee1", 'image.png'))
+    def take_screenshot(self):
+        # return pyautogui.screenshot()
+
+        from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
+        from PIL.Image import open as open_image
+        import os
+        return open_image(os.path.join(CLASSIFIED_DIR, "2d91e47c-af52-4a82-aae2-713a1f86b06b", 'image.png'))
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()
@@ -78,7 +81,7 @@ class StateProvider:
             player_cards, _ = self.get_cards(
                 screenshot, get_player_cards=True, get_table_cards=False)
 
-            return PreFlopGameState(*base_args, player_cards, self.pre_flop_charts[self.current_state.position])
+            return PreFlopGameState(*base_args, player_cards, self.pre_flop_charts[self.current_state.position.value])
 
         player_cards, table_cards = self.get_cards(
             screenshot, get_player_cards=True, get_table_cards=True)
@@ -89,8 +92,7 @@ class StateProvider:
         next_state, screenshot = self.get_next_state_consensus()
 
         if save_screenshots:
-            # if self.current_state is None or next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
-            if self.current_state != next_state:
+            if self.current_state is None or next_state.player_card_count != self.current_state.player_card_count or next_state.table_card_count != self.current_state.table_card_count:
                 print(f"Saved screenshot")
                 self.save_screenshot(screenshot)
 

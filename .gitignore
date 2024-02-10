@@ -3,6 +3,7 @@ images/*
 model_weights/*
 test.json
 poker.txt
+old_charts/*
 runs/*
 */__pycache__/*
 old/*

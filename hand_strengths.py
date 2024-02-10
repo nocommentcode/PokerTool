@@ -3,12 +3,15 @@ import numpy as np
 import numpy as np
 from enums.Card import Card
 from enums.GameType import GameType
+from enums.Position import Position
 from enums.Suit import Suit
 from enums.Value import Value
 from enums.Hand import Hand
 from ranges import BASE_STARTING_HAND_DIR, STARTING_HAND_CLASHES_FILENAME, STARTING_HAND_FILENAME
 from ranges.Evaluation import Evaluation
 import os
+
+from ranges.RangeChart import load_range_charts
 
 EVALUATION_ITERATIONS = 10000
 GAME_TYPE = GameType.SixPlayer
@@ -92,6 +95,51 @@ def print_top_x_hands(x):
         print(Hand(card1, card2))
 
 
+def get_position_hand_range(position, blinds):
+    charts = load_range_charts(GameType.NinePlayer, blinds)
+    charts = charts[position.value]
+
+    hands = np.load(os.path.join(
+        BASE_STARTING_HAND_DIR, STARTING_HAND_FILENAME))
+    hands = [Hand(*sorted([Evaluation.num_to_card(card) for card in hand], reverse=True))
+             for hand in hands]
+
+    hand_probs = []
+    for hand in hands:
+        all_actions = []
+        for action in charts.keys():
+            for opponent in charts[action].keys():
+                chart = charts[action][opponent]
+                chart_actions = chart.get_actions()
+
+                for a in chart_actions:
+                    if a not in all_actions:
+                        all_actions.append(a)
+
+        probs = [0 for _ in range(len(all_actions))]
+        for action in charts.keys():
+            for opponent in charts[action].keys():
+                chart = charts[action][opponent]
+                chart_actions = chart.get_actions()
+
+                for i, p in enumerate(chart.get_probs(hand)):
+                    action_index = all_actions.index(chart_actions[i])
+                    probs[action_index] += p
+
+        total_p = sum(probs)
+        fold_index = [all_actions.index(fold) for fold in ['Fold']]
+        fold_p = sum([probs[i] for i in fold_index])
+        call_p = (total_p - fold_p)/total_p
+        hand_probs.append(call_p)
+
+    hand_probs = np.array(hand_probs)
+
+    hand_probs /= hand_probs.sum()
+    for hand, prob in zip(hands[:200], hand_probs):
+        print(f"{hand}: {prob}")
+
+
 if __name__ == "__main__":
     # calculate_hand_clashing_indexes()
-    print_top_x_hands(20)
+    # print_top_x_hands(500)
+    get_position_hand_range(Position.BTN, 20)

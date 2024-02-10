@@ -42,8 +42,8 @@ class Position(Enum):
     def from_string(string):
         positions = {
             "utg": Position.UTG,
-            "utg1": Position.UTG1,
-            "utg2": Position.UTG2,
+            "utg_1": Position.UTG1,
+            "utg_2": Position.UTG2,
             "lj": Position.LJ,
             "hj": Position.HJ,
             "co": Position.CO,
