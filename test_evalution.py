@@ -238,17 +238,19 @@ def run_tests():
 if __name__ == "__main__":
     # run_tests()
     # print("tests passed")
-    hand = H("KH", "QS")
-    table_cards = [C("7D"), C("QH"), C("JC")]
+    hand = H("KH", "QH")
+    table_cards = [C("7H"), C("TH"), C("3H"), C("6H")]
     # table_cards = []
     # opponents = [Position.SB, Position.BB, Position.SB]
     opponents = [400, 500]
 
-    eval = Evaluation(hand, table_cards, 3)
+    eval = Evaluation(hand, table_cards, 4)
 
     start = time.time()
-    g = PostFlopEvaluation(hand, table_cards, GameState(
-        GameType.NinePlayer, hand.cards(), table_cards, 0, [1, 3, 5]))
+    gs = GameState(
+        GameType.EightPlayer, hand.cards(), table_cards, 0, [0, 0, 0, 0, 1, 1, 1])
+
+    g = PostFlopEvaluation(hand, table_cards, gs)
     print(str(g))
     print(f"Took {str(time.time() - start)} s")
 

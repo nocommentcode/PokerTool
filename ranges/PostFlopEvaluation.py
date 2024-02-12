@@ -21,7 +21,7 @@ class PostFlopEvaluation:
         num_players = len(state.opponent_positions) + 1
         evaluation = Evaluation(hand, table_cards, num_players)
         self.evaluations = {
-            name: evaluation.weighted_evaluation(probs, debug=True) for name, probs in self.get_hand_probabilities(state).items()}
+            name: evaluation.weighted_evaluation(probs) for name, probs in self.get_hand_probabilities(state).items()}
 
     def __str__(self):
         equity = np.array([[eval.equity, round(100 * eval.win_percent, 2)]

@@ -98,42 +98,25 @@ def print_top_x_hands(x):
 
 def get_position_hand_range(game_type: GameType, position, blinds):
     charts = load_range_charts(game_type, blinds)
+    if position == Position.BB:
+        position = Position.SB
     charts = charts[position.value]
+
+    chart = charts[OpponentAction.RFI.value]['none']
+    chart_actions = chart.get_actions()
+    fold_index = [chart_actions.index(fold) for fold in [
+        'Fold', 'FOLD'] if fold in chart_actions]
 
     hands = np.load(os.path.join(
         BASE_STARTING_HAND_DIR, STARTING_HAND_FILENAME))
     hands = [Hand(*sorted([Evaluation.num_to_card(card) for card in hand], reverse=True))
              for hand in hands]
-    # hands = [Hand(Card(Suit.Spades, Value.Seven),
-    #               Card(Suit.Hearts, Value.Five))]
 
     hand_probs = []
     for hand in hands:
-        all_actions = []
-        for action in charts.keys():
-            for opponent in charts[action].keys():
-                chart = charts[action][opponent]
-                chart_actions = chart.get_actions()
-
-                for a in chart_actions:
-                    if a not in all_actions:
-                        all_actions.append(a)
-
-        probs = [0 for _ in range(len(all_actions))]
-        for i, action in enumerate([OpponentAction.RFI, OpponentAction.RAISE, OpponentAction.ALL_IN, OpponentAction.THREE_BET, OpponentAction.THREE_BET_ALL_IN, OpponentAction.FOUR_BET_ALL_IN]):
-            if action.value not in charts:
-                continue
-            for opponent in charts[action.value].keys():
-                chart = charts[action.value][opponent]
-                chart_actions = chart.get_actions()
-                for i, p in enumerate(chart.get_probs(hand)):
-                    action_index = all_actions.index(chart_actions[i])
-                    probs[action_index] += p
-
-        total_p = sum(probs)
-        fold_index = [all_actions.index(fold) for fold in ['Fold', 'FOLD']]
-        fold_p = sum([probs[i] for i in fold_index])
-        call_p = (total_p - fold_p)/total_p
+        probs = chart.get_probs(hand)
+        call_p = sum([probs[i]
+                     for i in range(len(probs)) if i not in fold_index])
         hand_probs.append(call_p)
         # print(f"{hand}: {call_p}")
 
@@ -158,6 +141,6 @@ def build_position_hand_ranges(game_type: GameType):
 if __name__ == "__main__":
     # calculate_hand_clashing_indexes()
     # print_top_x_hands(500)
-    # get_position_hand_range(GameType.EightPlayer, Position.UTG1, 40)
+    # get_position_hand_range(GameType.EightPlayer, Position.UTG, 40)
 
     build_position_hand_ranges(GameType.EightPlayer)

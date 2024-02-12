@@ -37,6 +37,8 @@ class StateProvider:
     def set_blinds(self, blinds):
         self.blinds = blinds
         self.load_gto_ranges()
+        self.current_state = None
+        self.tick()
 
     def take_screenshot(self):
         # return pyautogui.screenshot()
@@ -44,7 +46,7 @@ class StateProvider:
         from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
         from PIL.Image import open as open_image
         import os
-        return open_image(os.path.join(CLASSIFIED_DIR, "ebd3f3fa-00a7-4b32-ba08-c5bf3bb58caa", 'image.png'))
+        return open_image(os.path.join(CLASSIFIED_DIR, "e19c22c1-2129-441b-9a7a-bc522ead3cfe", 'image.png'))
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()

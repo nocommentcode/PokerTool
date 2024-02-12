@@ -31,7 +31,7 @@ class Position(Enum):
     def get_relative_pos(self, index, game_type):
         positions = GAME_TYPE_POSITIONS[game_type]
         my_index = positions.index(self)
-        their_index = (my_index + index) % len(positions)
+        their_index = (my_index + index + 1) % len(positions)
         return positions[their_index]
 
     @staticmethod
