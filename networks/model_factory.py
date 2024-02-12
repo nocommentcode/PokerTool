@@ -17,8 +17,16 @@ nine_player_model_data = {
     "poker_network_fc": [64]
 }
 
+eight_player_model_data = {
+    "state_detector_name": "8_player_state_detector",
+    "poker_network_name": "8_player",
+    "poker_network_conv": [32, 64],
+    "poker_network_fc": [64]
+}
+
 game_mode_data = {
     GameType.SixPlayer: six_player_model_data,
+    GameType.EightPlayer: eight_player_model_data,
     GameType.NinePlayer: nine_player_model_data
 }
 

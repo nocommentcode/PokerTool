@@ -73,15 +73,16 @@ if __name__ == "__main__":
     cards_transformer = transforms.Compose(
         (to_tensor,  crop_table_transform,
          crop_cards_transform, cards_resize, convert_to_float, to_image))
-    test = transforms.Compose(
-        (to_tensor, transforms.Resize((1600, 2560), antialias=False), to_image))
+
     img = open(os.path.join("images/unclassified_images",
-                            "25d0b29a-6ad3-48a0-a45a-adb01b761b8a.png"))
+                            "bc2ed97e-e653-4e25-9a42-d5677326b94a.png"))
     # "678edd6f-eec3-4468-855c-b34c9838728f.png"))
 
-    # img = test(img)
+    img = cards_transformer(img)
     plt.imshow(img)
     plt.show()
+    img = open(os.path.join("images/classified_images",
+                            "1ec2e89f-af40-4de4-a132-b64c63ea96ef", "image.png"))
 
     img = cards_transformer(img)
     plt.imshow(img)

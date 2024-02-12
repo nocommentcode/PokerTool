@@ -98,10 +98,7 @@ def print_top_x_hands(x):
 
 def get_position_hand_range(game_type: GameType, position, blinds):
     charts = load_range_charts(game_type, blinds)
-    if position == Position.UTG2:
-        charts = charts[Position.UTG1.value]
-    else:
-        charts = charts[position.value]
+    charts = charts[position.value]
 
     hands = np.load(os.path.join(
         BASE_STARTING_HAND_DIR, STARTING_HAND_FILENAME))
@@ -123,7 +120,7 @@ def get_position_hand_range(game_type: GameType, position, blinds):
                         all_actions.append(a)
 
         probs = [0 for _ in range(len(all_actions))]
-        for action in [OpponentAction.RFI, OpponentAction.RAISE]:
+        for i, action in enumerate([OpponentAction.RFI, OpponentAction.RAISE, OpponentAction.ALL_IN, OpponentAction.THREE_BET, OpponentAction.THREE_BET_ALL_IN, OpponentAction.FOUR_BET_ALL_IN]):
             if action.value not in charts:
                 continue
             for opponent in charts[action.value].keys():
@@ -161,6 +158,6 @@ def build_position_hand_ranges(game_type: GameType):
 if __name__ == "__main__":
     # calculate_hand_clashing_indexes()
     # print_top_x_hands(500)
-    # get_position_hand_range(GameType.NinePlayer, Position.UTG1, 30)
+    # get_position_hand_range(GameType.EightPlayer, Position.UTG1, 40)
 
-    build_position_hand_ranges(GameType.NinePlayer)
+    build_position_hand_ranges(GameType.EightPlayer)

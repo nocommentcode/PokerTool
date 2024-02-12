@@ -9,12 +9,12 @@ from enums.StateTargetType import StateTargetType
 from networks.StateDetector import StateDetector
 import torch.nn as nn
 
-DATASET_NAME = '9_player_state'
+DATASET_NAME = '8_player_state'
 BATCH_SIZE = 5
 EPOCHS = 50
 LR = 0.001
-SAVE_NAME = '9_player_state_detector'
-GAME_TYPE = GameType.NinePlayer
+SAVE_NAME = '8_player_state_detector'
+GAME_TYPE = GameType.EightPlayer
 
 
 def run(model, dataloader, device, is_train, debug):

@@ -26,9 +26,12 @@ class RangeChart:
             suited_ax = int(hand.is_suited() or hand.is_pokets())
 
             probabilities = self.chart[ax_1, ax_2, suited_ax]
+
             action = np.random.choice(self.actions, p=probabilities)
-            if action == "FOLD":
-                return '-'
+            # if action == "FOLD":
+            #     return '-'
+            return action
+
         except Exception as e:
             return f"{str(hand)} - Error ({probabilities})"
 

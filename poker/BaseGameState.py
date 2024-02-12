@@ -3,14 +3,15 @@ from poker.GameState import GameState
 
 
 class BaseGameState:
-    def __init__(self, game_type: GameType, game_state: GameState):
+    def __init__(self, game_type: GameType, game_state: GameState, blinds: int):
         self.game_type = game_type
         self.game_state = game_state
         self.game_stage = game_state.game_stage
         self.position = game_state.position
+        self.blinds = blinds
 
     def header(self):
-        return f"------ {self.game_stage.value} ({len(self.game_state.opponent_positions)} in hand) -------"
+        return f"------ {self.game_stage.value} ({len(self.game_state.opponent_positions)} opponents, {self.blinds}BB) -------"
 
     def spacer(self):
         return "\n" * 50

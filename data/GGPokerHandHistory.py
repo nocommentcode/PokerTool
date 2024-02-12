@@ -17,6 +17,7 @@ class GGPokerHandHistory:
                             self.extract_table_cards(text, 2),
                             self.extract_table_cards(text, 3),
                             self.extract_table_cards(text, 4)]
+        self.text = text
 
     def extract_num_player(self, text):
         seats = re.findall(r"Seat (\d):", text)
@@ -45,7 +46,7 @@ class GGPokerHandHistory:
 
         if dealer_pos < 0:
             # dealer is after me -> his seat - mine = dealer pos
-            return self.num_players + dealer_pos
+            return total_seats + dealer_pos
 
         # dealer is before me dealer pos = remaining seats + dealer pos
         return dealer_pos

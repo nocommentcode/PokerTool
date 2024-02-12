@@ -5,12 +5,12 @@ from torch.utils.tensorboard import SummaryWriter
 
 from training.Trainer import Trainer
 
-DATASET_NAME = "6_player_new_crop"
+DATASET_NAME = "combined_6_8"
 DATASET_SUBSET = None
 WEIGH_LOSSES = False
 BATCH_SIZE = 16
 EPOCHS = 300
-SAVE_NAME = "6_player_flop_2"
+SAVE_NAME = "8_player"
 LR = 0.0007
 CONV_CHANNELS = [32, 64]
 FC_LAYER = [64]

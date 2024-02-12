@@ -36,7 +36,9 @@ class Position(Enum):
 
     @staticmethod
     def from_dealer_pos_idx(dealer_pos, game_type):
-        return GAME_TYPE_POSITIONS[game_type][dealer_pos]
+        index = (game_type.get_num_players() -
+                 dealer_pos) % game_type.get_num_players()
+        return GAME_TYPE_POSITIONS[game_type][index]
 
     @staticmethod
     def from_string(string):
@@ -60,6 +62,15 @@ GAME_TYPE_POSITIONS = {
                          Position.UTG,
                          Position.HJ,
                          Position.CO],
+
+    GameType.EightPlayer: [Position.BTN,
+                           Position.SB,
+                           Position.BB,
+                           Position.UTG,
+                           Position.UTG1,
+                           Position.LJ,
+                           Position.HJ,
+                           Position.CO],
 
     GameType.NinePlayer: [Position.BTN,
                           Position.SB,

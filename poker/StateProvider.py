@@ -3,6 +3,7 @@ from data import UN_CLASSIFIED_DIR
 from enums.GameStage import GameStage
 from enums.GameType import GameType
 from enums.PokerTargetType import PLAYER_CARDS, TABLE_CARDS
+from enums.Position import GAME_TYPE_POSITIONS
 from networks.PokerNetwork import PokerNetwork
 from networks.StateDetector import StateDetector
 from poker.FoldedGameState import FoldedGameState
@@ -16,17 +17,26 @@ import torch
 
 from time import sleep
 
+from ranges.GTOPreflopRange import GTOPreflopRange
+
 
 class StateProvider:
-    def __init__(self, state_detector: StateDetector, model: PokerNetwork, game_type: GameType, pre_flop_charts):
+    def __init__(self, state_detector: StateDetector, model: PokerNetwork, game_type: GameType):
         self.state_detector = state_detector
         self.model = model
         self.current_state = None
         self.game_type = game_type
-        self.pre_flop_charts = pre_flop_charts
+        self.blinds = 40
+        self.load_gto_ranges()
 
-    def set_charts(self, charts):
-        self.pre_flop_charts = charts
+    def load_gto_ranges(self):
+        self.pre_flop_charts = {
+            position: GTOPreflopRange(self.game_type, self.blinds, position) for position in GAME_TYPE_POSITIONS[self.game_type]
+        }
+
+    def set_blinds(self, blinds):
+        self.blinds = blinds
+        self.load_gto_ranges()
 
     def take_screenshot(self):
         # return pyautogui.screenshot()
@@ -34,7 +44,7 @@ class StateProvider:
         from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
         from PIL.Image import open as open_image
         import os
-        return open_image(os.path.join(CLASSIFIED_DIR, "2d91e47c-af52-4a82-aae2-713a1f86b06b", 'image.png'))
+        return open_image(os.path.join(CLASSIFIED_DIR, "ebd3f3fa-00a7-4b32-ba08-c5bf3bb58caa", 'image.png'))
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()
@@ -72,7 +82,7 @@ class StateProvider:
 
     def get_game_state(self, screenshot):
 
-        base_args = (self.game_type, self.current_state)
+        base_args = (self.game_type, self.current_state, self.blinds)
 
         if self.current_state.game_stage == GameStage.FOLDED:
             return FoldedGameState(*base_args)
@@ -81,7 +91,7 @@ class StateProvider:
             player_cards, _ = self.get_cards(
                 screenshot, get_player_cards=True, get_table_cards=False)
 
-            return PreFlopGameState(*base_args, player_cards, self.pre_flop_charts[self.current_state.position.value])
+            return PreFlopGameState(*base_args, player_cards, self.pre_flop_charts[self.current_state.position])
 
         player_cards, table_cards = self.get_cards(
             screenshot, get_player_cards=True, get_table_cards=True)

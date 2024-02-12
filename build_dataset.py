@@ -7,7 +7,7 @@ from data.img_transformers import cards_transformer
 import torch
 from PIL.Image import open as open_image
 
-DATASET_NAME = "6_player_new_crop"
+DATASET_NAME = "8_player"
 DATA_DIR = CLASSIFIED_DIR
 
 

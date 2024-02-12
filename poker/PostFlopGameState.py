@@ -6,8 +6,8 @@ from ranges.PostFlopEvaluation import PostFlopEvaluation
 
 
 class PostFlopGameState(BaseGameState):
-    def __init__(self, game_type: GameType, game_state: GameState, player_cards, table_cards):
-        super().__init__(game_type, game_state)
+    def __init__(self, game_type: GameType, game_state: GameState, blinds: int, player_cards, table_cards):
+        super().__init__(game_type, game_state, blinds)
         self.player_cards = player_cards
         self.hand = Hand(*player_cards)
         self.table_cards = table_cards

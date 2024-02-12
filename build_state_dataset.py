@@ -1,4 +1,5 @@
 from PIL.Image import Image
+from PIL.Image import fromarray
 import numpy as np
 from data.img_transformers import cards_transformer
 import torch
@@ -19,40 +20,23 @@ from networks.model_factory import model_factory
 import cv2
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-DATASET_NAME = "9_player_state"
+DATASET_NAME = "8_player_state"
 UNCLASSIDIED_NAME = UN_CLASSIFIED_DIR
 # UNCLASSIDIED_NAME = "images/unclassified_images_from_big_batch_2"
-GAME_TYPE = GameType.NinePlayer
+GAME_TYPE = GameType.EightPlayer
+DEBUG = True
 
-
-def player_card_detection(image: Image):
-    points = (
-        (400, 848),
-        (166, 513),
-        (362, 244),
-        (728, 151),
-        (1080, 151),
-        (1450, 230),
-        (1649, 517),
-        (1418, 844)
+OPPONENT_POSITIONS = {
+    GameType.EightPlayer: (
+        (387, 837),
+        (151, 512),
+        (430, 219),
+        (899, 147),
+        (1394, 220),
+        (1644, 512),
+        (1421, 843),
     )
-
-    upper = np.array([150, 62, 62], np.uint8)
-    lower = np.array([112, 40, 40], np.uint8)
-    pixels = np.asarray(image)
-
-    def player_has_cards(index):
-        x, y = points[index]
-        point = pixels[y, x]
-        print(point)
-
-        mask = cv2.inRange(point, lower, upper)
-        if len(np.argwhere(mask)) == 3:
-            return "1"
-        else:
-            return "0"
-
-    return [player_has_cards(i) for i in range(8)]
+}
 
 
 class StateClassification:
@@ -109,82 +93,91 @@ class StateClassification:
 
         return card_2, card_1
 
-    def get_classification(self, predictions, image):
+    def player_card_detection(self, image: Image):
+        points = OPPONENT_POSITIONS[GAME_TYPE]
 
-        card, table = predictions
+        upper = np.array([150, 80, 80], np.uint8)
+        lower = np.array([112, 40, 40], np.uint8)
+        pixels = np.asarray(image).copy()
 
-        player_cards = str(card)
-        table_cards = str(table)
-        opponents = player_card_detection(image)
+        def player_has_cards(point):
+            x, y = point
+            point = pixels[y, x]
 
-        # opponents = ["0" if i not in opponents else "1" for i in range(
-        # 1, GAME_TYPE.get_num_players())]
+            mask = cv2.inRange(point, lower, upper)
+            if len(np.argwhere(mask)) == 3:
+                return "1"
+            else:
+                return "0"
+
+        return [player_has_cards(point) for point in points]
+
+    def count_player_cards(self, image: Image):
+
+        upper = np.array([250, 250, 250], np.uint8)
+        lower = np.array([230, 230, 230], np.uint8)
+        pixels = np.asarray(image)
+
+        x, y = 955, 961
+        point = pixels[y, x]
+
+        mask = cv2.inRange(point, lower, upper)
+        if len(np.argwhere(mask)) == 3:
+            return 2
+        else:
+            return 0
+
+    def count_table_cards(self, image: Image):
+        points = [
+            (645, 537),
+            (790, 537),
+            (938, 537),
+            (1093, 537),
+            (1233, 537),
+        ]
+
+        upper = np.array([250, 250, 250], np.uint8)
+        lower = np.array([230, 230, 230], np.uint8)
+        pixels = np.asarray(image)
+
+        def player_has_cards(point):
+            x, y = point
+            point = pixels[y, x]
+
+            mask = cv2.inRange(point, lower, upper)
+            if len(np.argwhere(mask)) == 3:
+                return 1
+            else:
+                return 0
+
+        return sum([player_has_cards(point) for point in points])
+
+    def get_classification(self, image):
+
+        player_cards = str(self.count_player_cards(image))
+        table_cards = str(self.count_table_cards(image))
+        opponents = self.player_card_detection(image)
+
         labels = [str(self.hand.dealer_pos)] + \
             [player_cards] + [table_cards] + opponents
 
         return ",".join(labels)
-    # if predictions is None:
-        #     print(
-        #         f"\n{self.hand.dealer_pos}  player_card  table_cards  num_players")
-        #     user_input = input("->")
-        #     user_input = user_input.split(" ")
-        #     player_cards = user_input[0]
-        #     table_cards = user_input[1]
-        #     opponents = [int(char) for char in user_input[2]]
 
-        # else:
-        #     card, table = predictions
-        #     print(
-        #         f"\n{self.hand.dealer_pos}  {card}  {table}  num_players (empty to change)")
-        #     user_input = input("->")
-
-        #     # change predictions
-        #     if user_input == "":
-        #         return self.get_classification(None)
-
-        #     player_cards = str(card)
-        #     table_cards = str(table)
-        #     opponents = [int(char) for char in user_input]
-
-        # opponents = ["0" if i not in opponents else "1" for i in range(
-        #     1, GAME_TYPE.get_num_players())]
-        # labels = [str(self.hand.dealer_pos)] + \
-        #     [player_cards] + [table_cards] + opponents
-
-        # return ",".join(labels)
-
-    def pred_counts_via_model(self, image, poker_network: PokerNetwork):
-        transformed = cards_transformer(image)
-        batch = transformed.unsqueeze(0)
-        batch = batch.to(torch.float32).to("cuda")
-
-        predictions = poker_network.predict(batch)
-        card_count = 0
-        for type in PLAYER_CARDS:
-            if predictions[type.value].suit != Suit.Empty:
-                card_count += 1
-
-        table_count = 0
-        for type in TABLE_CARDS:
-            if predictions[type.value].suit != Suit.Empty:
-                table_count += 1
-
-        return card_count, table_count
-
-    def classify(self, plt_object, poker_network=None):
+    def classify(self, plt_object, debug=False):
         image = open_image(self.file_path)
-        # plt_object.set_data(image)
-        # plt.draw()
-        # plt.imshow(image)
 
-        predictions = None
-        if poker_network is not None:
-            predictions = self.pred_counts_via_model(image, poker_network)
+        classification = self.get_classification(image)
 
-        classification = self.get_classification(predictions, image)
-        # print(classification)
-        # plt.show()
-        self.save_to_dataset(image, classification)
+        if debug:
+            print(self.hand.text)
+            print("\n\n")
+            print(classification)
+            plt_object.set_data(image)
+            plt.draw()
+            input("")
+
+        if not debug:
+            self.save_to_dataset(image, classification)
 
 
 def get_hand_histories():
@@ -218,15 +211,17 @@ if __name__ == "__main__":
     failures = 0
 
     # open plot object
-    filename = f"{UNCLASSIDIED_NAME}/{images[1]}.png"
-    plt_object = plt.imshow(open_image(filename))
-    plt.pause(0.01)
+    plt_object = None
+    if DEBUG:
+        filename = f"{UNCLASSIDIED_NAME}/{images[1]}.png"
+        plt_object = plt.imshow(open_image(filename))
+        plt.pause(0.01)
 
     with tqdm(images) as image_uuids:
         for uuid in image_uuids:
             try:
                 classification = StateClassification(uuid, hands)
-                classification.classify(plt_object, model)
+                classification.classify(plt_object, debug=DEBUG)
                 sucesses += 1
             except Exception as e:
                 print(e)

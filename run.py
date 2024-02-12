@@ -3,12 +3,11 @@ from networks.model_factory import model_factory
 from poker.StateProvider import StateProvider
 from enums.GameType import GameType
 from time import sleep
-
-from ranges.RangeChart import load_range_charts
 import msvcrt
 
-GAME_TYPE = GameType.NinePlayer
-BLINDS = 20
+GAME_TYPE = GameType.EightPlayer
+AVAILABLE_BLINDS = [10, 12, 15, 20, 30, 40, 60, 80]
+SAVE_SCREENSHOTS = False
 
 
 def check_change_blinds():
@@ -27,23 +26,18 @@ def check_change_blinds():
 
 def run():
     state_detector, model = model_factory(GAME_TYPE)
-
-    charts = load_range_charts(GAME_TYPE, BLINDS)
-    charts = charts
-
-    state_provider = StateProvider(state_detector, model, GAME_TYPE, charts)
+    state_provider = StateProvider(state_detector, model, GAME_TYPE)
 
     while True:
-        state_provider.tick(save_screenshots=True)
+        state_provider.tick(save_screenshots=SAVE_SCREENSHOTS)
 
         sleep(1)
 
         try:
             new_blinds = check_change_blinds()
-            if new_blinds is not None:
+            if new_blinds in AVAILABLE_BLINDS:
                 print(f"Changing blinds to {new_blinds}")
-                new_charts = load_range_charts(GAME_TYPE, new_blinds)
-                state_provider.set_charts(new_charts)
+                state_provider.set_blinds(new_blinds)
 
         except Exception as e:
             print(f"Error - {str(e)}")

@@ -10,10 +10,11 @@ from enums.GameType import GameType
 from networks.StateDetector import StateDetector
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-STATE_DECTOR_NAME = "6_player_state_detector_new_crop"
+STATE_DECTOR_NAME = "8_player_state_detector"
 DIR_NAME = UN_CLASSIFIED_DIR
 # DIR_NAME = "images/unclassified_images_from_big_batch"
-GAME_TYPE = GameType.SixPlayer
+GAME_TYPE = GameType.EightPlayer
+DEBUG = False
 
 
 class ImageClassification:
@@ -89,7 +90,7 @@ class ImageClassification:
         classification = classification[1:]
         return classification
 
-    def classify(self, card_detector, prev_state):
+    def classify(self, card_detector, prev_state, debug=True):
         image = open_image(self.file_path)
 
         state = card_detector.get_state(image)
@@ -100,13 +101,18 @@ class ImageClassification:
 
         classification = self.get_classification(
             state.player_card_count, state.table_card_count)
-        # print(
-        #     f"\nDealer: {state.dealer_pos}, Player: {state.player_card_count}, Table: {state.table_card_count}, Opponents:{state.num_opponents}")
-        # print(classification)
-        # import matplotlib.pyplot as plt
-        # plt.imshow(image)
-        # plt.show()
-        self.save_to_classified(image, classification)
+
+        if debug:
+            # print(
+            #     f"\nDealer: {state.dealer_pos}, Player: {state.player_card_count}, Table: {state.table_card_count}, Opponents:{state.num_opponents}")
+            print("\n" + classification)
+            import matplotlib.pyplot as plt
+            plt.imshow(image)
+            plt.show()
+
+        if not debug:
+            self.save_to_classified(image, classification)
+
         return state
 
 
@@ -159,7 +165,8 @@ if __name__ == "__main__":
         for uuid in image_uuids:
             try:
                 classification = ImageClassification(uuid, hands)
-                prev_state = classification.classify(card_detector, prev_state)
+                prev_state = classification.classify(
+                    card_detector, prev_state, debug=DEBUG)
                 sucesses += 1
             except Exception as e:
                 print(e)
