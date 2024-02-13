@@ -10,6 +10,8 @@ from enums.OpponentAction import OpponentAction
 from enums.Position import GAME_TYPE_POSITIONS, Position
 from ranges import BASE_CHART_DIR
 from ranges.RangeChart import RangeChart
+from utils.PrettyTable import PrettyTable
+from utils.printing import red_text, green_text
 
 
 class GTOPreflopRange:
@@ -77,7 +79,17 @@ class GTOPreflopRange:
                 action_gto[index] = self.charts[action.value][opponent][hand]
             gto.append(action_gto)
 
-        df = pd.DataFrame(np.array(gto).swapaxes(0, 1),
-                          opponent_positions, actions)
+        def formatter(value):
+            if value in ["FOLD", "Fold"]:
+                return red_text(str(value))
 
-        return df.head(len(opponent_positions)), rfi_action
+            if value == "-":
+                return "-"
+
+            return green_text(str(value))
+
+        table = PrettyTable("GTO Range", "blue", 3)
+        table.add_row_names(opponent_positions)
+        table.add_data(np.array(gto).swapaxes(0, 1), actions, formatter)
+
+        return str(table), formatter(rfi_action)

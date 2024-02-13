@@ -2,6 +2,7 @@ from enums.GameType import GameType
 from enums.Hand import Hand
 from poker.BaseGameState import BaseGameState
 from poker.GameState import GameState
+from utils.printing import white_text
 
 
 class PreFlopGameState(BaseGameState):
@@ -16,7 +17,7 @@ class PreFlopGameState(BaseGameState):
         return f"RFI: {rfi}\n{str(table)}"
 
     def str_player_cards(self):
-        return f"Player Cards: {str(self.hand)}"
+        return f"{white_text('Player:', bold=True)} {str(self.hand)}"
 
     def __str__(self) -> str:
         base = super().__str__()

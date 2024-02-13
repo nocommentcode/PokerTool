@@ -1,6 +1,7 @@
 from enum import Enum
 
 from enums.GameType import GameType
+from utils.printing import green_text, red_text, yellow_text
 
 
 class Position(Enum):
@@ -53,6 +54,13 @@ class Position(Enum):
             "sb": Position.SB,
             "bb": Position.BB}
         return positions[string]
+
+    def pretty_str(self):
+        all_positions = GAME_TYPE_POSITIONS[GameType.NinePlayer]
+        my_position = all_positions.index(self)
+        position_strength = my_position // 3
+        position_colours = [green_text, yellow_text, red_text]
+        return position_colours[position_strength](self.name, bold=True)
 
 
 GAME_TYPE_POSITIONS = {

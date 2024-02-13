@@ -3,6 +3,7 @@ from enums.Hand import Hand
 from poker.BaseGameState import BaseGameState
 from poker.GameState import GameState
 from ranges.PostFlopEvaluation import PostFlopEvaluation
+from utils.printing import white_text
 
 
 class PostFlopGameState(BaseGameState):
@@ -15,10 +16,10 @@ class PostFlopGameState(BaseGameState):
             self.hand, table_cards, game_state)
 
     def str_player_cards(self):
-        return f"Player Cards: {str(self.hand)}"
+        return f"{white_text('Player:', bold=True)} {str(self.hand)}"
 
     def str_table_cards(self):
-        return f"Table Cards: {' '.join([str(card) for card in self.table_cards])}"
+        return f"{white_text('Table:', bold=True)} {' '.join([str(card) for card in self.table_cards])}"
 
     def __str__(self) -> str:
         base = super().__str__()

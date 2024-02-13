@@ -7,7 +7,7 @@ import msvcrt
 
 GAME_TYPE = GameType.EightPlayer
 AVAILABLE_BLINDS = [10, 12, 15, 20, 30, 40, 60, 80]
-SAVE_SCREENSHOTS = False
+SAVE_SCREENSHOTS = True
 
 
 def check_change_blinds():
@@ -29,7 +29,10 @@ def run():
     state_provider = StateProvider(state_detector, model, GAME_TYPE)
 
     while True:
-        state_provider.tick(save_screenshots=SAVE_SCREENSHOTS)
+        try:
+            state_provider.tick(save_screenshots=SAVE_SCREENSHOTS)
+        except Exception as e:
+            print(f"Error: {str(e)}")
 
         sleep(1)
 
@@ -40,7 +43,7 @@ def run():
                 state_provider.set_blinds(new_blinds)
 
         except Exception as e:
-            print(f"Error - {str(e)}")
+            print(f"Error changing blinds - {str(e)}")
 
 
 if __name__ == "__main__":

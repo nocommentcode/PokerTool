@@ -15,6 +15,8 @@ import pandas as pd
 
 from typing import List
 
+from utils.PrettyTable import PrettyTable
+
 
 class PostFlopEvaluation:
     def __init__(self, hand: Hand, table_cards: List[Card], state: GameState):
@@ -27,11 +29,11 @@ class PostFlopEvaluation:
         equity = np.array([[eval.equity, round(100 * eval.win_percent, 2)]
                           for eval in self.evaluations.values()])
         equity = equity.round(2)
-        names = np.array(self.evaluations.keys())
 
-        df = pd.DataFrame(equity, names, ["Equity", "Win %"])
-
-        return str(df.head(len(equity)))
+        table = PrettyTable("Equity Eval", "blue", 3)
+        table.add_row_names(self.evaluations.keys())
+        table.add_data(equity, ["Equity", "Win %"])
+        return str(table)
 
     def get_hand_probabilities(self, state: GameState):
         def load_probability(blinds, position):
@@ -39,7 +41,7 @@ class PostFlopEvaluation:
             path = os.path.join(BASE_STARTING_HAND_DIR, file_name)
             return np.load(path)
 
-        probs = {name: [load_probability(blinds, position) for position in state.opponent_positions]
-                 for blinds, name in zip([10, 30, 80], ["Low", "Med", "High"])}
+        probs = {f"{blinds}BB": [load_probability(blinds, position) for position in state.opponent_positions]
+                 for blinds in [10, 30, 80]}
 
         return probs
