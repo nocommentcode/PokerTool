@@ -68,36 +68,37 @@ cards_transformer = transforms.Compose(
 )
 
 if __name__ == "__main__":
-    import os
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-    cards_transformer = transforms.Compose(
-        (to_tensor,  crop_table_transform,
-         crop_cards_transform, cards_resize, convert_to_float, to_image))
+    # import os
+    # os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+    # cards_transformer = transforms.Compose(
+    #     (to_tensor,  crop_table_transform,
+    #      crop_cards_transform, cards_resize, convert_to_float, to_image))
 
-    img = open(os.path.join("images/unclassified_images",
-                            "bc2ed97e-e653-4e25-9a42-d5677326b94a.png"))
-    # "678edd6f-eec3-4468-855c-b34c9838728f.png"))
+    # img = open(os.path.join("images/unclassified_images",
+    #                         "bc2ed97e-e653-4e25-9a42-d5677326b94a.png"))
+    # # "678edd6f-eec3-4468-855c-b34c9838728f.png"))
 
-    img = cards_transformer(img)
-    plt.imshow(img)
-    plt.show()
-    img = open(os.path.join("images/classified_images",
-                            "1ec2e89f-af40-4de4-a132-b64c63ea96ef", "image.png"))
+    # img = cards_transformer(img)
+    # plt.imshow(img)
+    # plt.show()
+    # img = open(os.path.join("images/classified_images",
+    #                         "1ec2e89f-af40-4de4-a132-b64c63ea96ef", "image.png"))
 
-    img = cards_transformer(img)
-    plt.imshow(img)
-    plt.show()
-    dfsd
-    # load an image
-    dir = Path("images/classified_images")
-    remaining = listdir(dir)
+    # img = cards_transformer(img)
+    # plt.imshow(img)
+    # plt.show()
+    # dfsd
+    # # load an image
+    # dir = Path("images/classified_images")
+    # remaining = listdir(dir)
 
-    images = torch.zeros((len(remaining), *CARDS_FINAL_DIMENTIONS))
-    with tqdm(remaining) as all_remaining:
-        for i, filename in enumerate(all_remaining):
-            image = open(Path(f"{dir}/{filename}/image.png"))
-            image = cards_transformer(image)
-            images[i] = image
+    # images = torch.zeros((len(remaining), *CARDS_FINAL_DIMENTIONS))
+    # with tqdm(remaining) as all_remaining:
+    #     for i, filename in enumerate(all_remaining):
+    #         image = open(Path(f"{dir}/{filename}/image.png"))
+    #         image = cards_transformer(image)
+    #         images[i] = image
 
-    print(images.mean((0, 2, 3)))
-    print(images.std((0, 2, 3)))
+    # print(images.mean((0, 2, 3)))
+    # print(images.std((0, 2, 3)))
+    pass

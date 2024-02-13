@@ -6,7 +6,7 @@ from training.Tester import Tester
 
 
 GAME_TYPE = GameType.EightPlayer
-DATASET_NAME = "8_player"
+DATASET_NAME = "combined_6_8"
 
 
 if __name__ == "__main__":

@@ -18,8 +18,8 @@ nine_player_model_data = {
 }
 
 eight_player_model_data = {
-    "state_detector_name": "8_player_state_detector",
-    "poker_network_name": "8_player",
+    "state_detector_name": "8_player_state_detector_2",
+    "poker_network_name": "8_player_2",
     "poker_network_conv": [32, 64],
     "poker_network_fc": [64]
 }

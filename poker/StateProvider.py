@@ -142,9 +142,13 @@ class StateProvider:
 
         return True
 
-    def print_for_screenshot_(self, screenshot):
-        self.current_state = self.state_detector.get_state(screenshot)
-        print(str(self.get_game_state(screenshot)))
+    def print_for_screenshot_(self, screenshot, game_stages=[gs for gs in GameStage]):
+        state = self.state_detector.get_state(screenshot)
+        if state.game_stage in game_stages:
+            print(str(self.get_game_state(state, screenshot)))
+            return True
+
+        return False
 
     def save_screenshot(self, screenshot):
         filename = f"{UN_CLASSIFIED_DIR}/{uuid.uuid4()}.png"

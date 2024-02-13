@@ -54,8 +54,7 @@ class StateDetector(nn.Module):
             nn.Linear(output_dim, 128),
             nn.ReLU(),
             nn.Dropout(),
-            nn.Linear(128, 64),
-            nn.Linear(64, game_type.get_num_players()-1)
+            nn.Linear(128, game_type.get_num_players()-1)
         )
 
         self.optim = torch.optim.Adam(self.parameters(), lr=lr)

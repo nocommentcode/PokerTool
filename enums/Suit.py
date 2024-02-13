@@ -59,10 +59,11 @@ class Suit(Enum):
     def __gt__(self, other):
         if type(other) != Suit:
             return False
-        # spade > club
         # heart > club
+
         # diamond > club
         # diamond > heart
+
         # spade > heart
         # spade > club
         # spade > diamond

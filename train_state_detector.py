@@ -11,9 +11,9 @@ import torch.nn as nn
 
 DATASET_NAME = '8_player_state'
 BATCH_SIZE = 5
-EPOCHS = 50
+EPOCHS = 30
 LR = 0.001
-SAVE_NAME = '8_player_state_detector'
+SAVE_NAME = '8_player_state_detector_2'
 GAME_TYPE = GameType.EightPlayer
 
 
@@ -90,7 +90,7 @@ def run(model, dataloader, device, is_train, debug):
     print(f"Table_accuracy: {total_correct_table*100/total_samples}")
     print(f"Dealer_accuracy: {total_correct_dealer*100/total_samples}")
     print(
-        f"Opponent_accuracy: {total_correct_opponents*100/(GAME_TYPE.get_num_players()*total_samples)}")
+        f"Opponent_accuracy: {total_correct_opponents*100/((GAME_TYPE.get_num_players()-1)*total_samples)}")
     print("\n\n")
 
 

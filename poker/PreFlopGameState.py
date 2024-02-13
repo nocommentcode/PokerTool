@@ -2,7 +2,7 @@ from enums.GameType import GameType
 from enums.Hand import Hand
 from poker.BaseGameState import BaseGameState
 from poker.GameState import GameState
-from utils.printing import white_text
+from utils.printing import white_text, blue_text
 
 
 class PreFlopGameState(BaseGameState):
@@ -14,7 +14,11 @@ class PreFlopGameState(BaseGameState):
 
     def str_gto(self):
         table, rfi = self.gto_range[self.hand]
-        return f"RFI: {rfi}\n{str(table)}"
+        rfi_string = ""
+        if rfi is not None:
+            rfi_string += f"{blue_text('RFI:', bold=True)} {rfi}"
+
+        return f"{str(table)}\n{rfi_string}"
 
     def str_player_cards(self):
         return f"{white_text('Player:', bold=True)} {str(self.hand)}"

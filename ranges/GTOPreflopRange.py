@@ -67,7 +67,7 @@ class GTOPreflopRange:
         actions = []
         gto = []
 
-        rfi_action = self.rfi_chart[hand] if self.rfi_chart is not None else '-'
+        rfi_action = self.rfi_chart[hand] if self.rfi_chart is not None else None
 
         for action in sorted([OpponentAction(a) for a in self.charts.keys()]):
             actions.append(str(action))
@@ -88,8 +88,8 @@ class GTOPreflopRange:
 
             return green_text(str(value))
 
-        table = PrettyTable("GTO Range", "blue", 3)
+        table = PrettyTable("GTO Range", "blue", 2)
         table.add_row_names(opponent_positions)
         table.add_data(np.array(gto).swapaxes(0, 1), actions, formatter)
 
-        return str(table), formatter(rfi_action)
+        return str(table), formatter(rfi_action) if rfi_action is not None else None

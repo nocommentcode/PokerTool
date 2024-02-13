@@ -1,20 +1,24 @@
 import shutil
 import datetime
 from pathlib import Path
+from matplotlib import pyplot as plt
+import torch
 from tqdm import tqdm
-from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
+from build_state_dataset import UNCLASSIDIED_NAME
+from data import CLASSIFIED_DIR, DATASET_DIR, UN_CLASSIFIED_DIR
 import os
+from data.img_transformers import cards_transformer
 from PIL.Image import open as open_image
 from data.GGPokerHandHistory import GGPokerHandHistory
 from enums.GameType import GameType
 from networks.StateDetector import StateDetector
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-STATE_DECTOR_NAME = "8_player_state_detector"
+STATE_DECTOR_NAME = "8_player_state_detector_2"
 DIR_NAME = UN_CLASSIFIED_DIR
-# DIR_NAME = "images/unclassified_images_from_big_batch"
 GAME_TYPE = GameType.EightPlayer
 DEBUG = False
+DATASET_NAME = "combined_6_8"
 
 
 class ImageClassification:
@@ -44,11 +48,12 @@ class ImageClassification:
 
         return current_hand
 
-    def save_to_classified(self, image, classification):
-        dir = Path(f"{CLASSIFIED_DIR}/{self.uuid}")
+    def save_to_dataset(self, image, classification):
+        dir = Path(f"{DATASET_DIR}/{DATASET_NAME}/{self.uuid}")
         dir.mkdir(parents=True, exist_ok=True)
 
-        image.save(f"{dir}/image.png")
+        tensor_img = cards_transformer(image)
+        torch.save(tensor_img, f"{dir}/image.pt")
 
         with open(f"{dir}/classification.txt", 'w') as f:
             f.write(classification)
@@ -90,7 +95,7 @@ class ImageClassification:
         classification = classification[1:]
         return classification
 
-    def classify(self, card_detector, prev_state, debug=True):
+    def classify(self, card_detector, prev_state, plt_object, debug=True):
         image = open_image(self.file_path)
 
         state = card_detector.get_state(image)
@@ -103,15 +108,13 @@ class ImageClassification:
             state.player_card_count, state.table_card_count)
 
         if debug:
-            # print(
-            #     f"\nDealer: {state.dealer_pos}, Player: {state.player_card_count}, Table: {state.table_card_count}, Opponents:{state.num_opponents}")
             print("\n" + classification)
-            import matplotlib.pyplot as plt
-            plt.imshow(image)
-            plt.show()
+            plt_object.set_data(image)
+            plt.draw()
+            input("")
 
         if not debug:
-            self.save_to_classified(image, classification)
+            self.save_to_dataset(image, classification)
 
         return state
 
@@ -155,18 +158,24 @@ if __name__ == "__main__":
 
     hands = get_hand_histories()
     images = get_image_uuids()
-    image_index = 0
 
     sucesses = 0
     failures = 0
     prev_state = None
+
+    # open plot object
+    plt_object = None
+    if DEBUG:
+        filename = f"{UNCLASSIDIED_NAME}/{images[1]}.png"
+        plt_object = plt.imshow(open_image(filename))
+        plt.pause(0.01)
 
     with tqdm(images) as image_uuids:
         for uuid in image_uuids:
             try:
                 classification = ImageClassification(uuid, hands)
                 prev_state = classification.classify(
-                    card_detector, prev_state, debug=DEBUG)
+                    card_detector, prev_state, plt_object, debug=DEBUG)
                 sucesses += 1
             except Exception as e:
                 print(e)
