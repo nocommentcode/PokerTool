@@ -57,9 +57,10 @@ class Position(Enum):
 
     def pretty_str(self):
         all_positions = GAME_TYPE_POSITIONS[GameType.NinePlayer]
+        all_positions = all_positions[1:] + [all_positions[0]]
         my_position = all_positions.index(self)
         position_strength = my_position // 3
-        position_colours = [green_text, yellow_text, red_text]
+        position_colours = [red_text, yellow_text, green_text]
         return position_colours[position_strength](self.name, bold=True)
 
 

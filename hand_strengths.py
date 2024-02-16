@@ -5,6 +5,7 @@ from enums.Card import Card
 from enums.GameType import GameType
 from enums.OpponentAction import OpponentAction
 from enums.Position import GAME_TYPE_POSITIONS, Position
+from enums.StackSize import StackSize
 from enums.Suit import Suit
 from enums.Value import Value
 from enums.Hand import Hand
@@ -98,9 +99,8 @@ def print_top_x_hands(x):
 
 def get_position_hand_range(game_type: GameType, position, blinds):
     charts = load_range_charts(game_type, blinds)
-    if position == Position.BB:
-        position = Position.SB
-    charts = charts[position.value]
+    charts = charts[Position.SB.value if position ==
+                    Position.BB else position.value]
 
     chart = charts[OpponentAction.RFI.value]['none']
     chart_actions = chart.get_actions()
@@ -132,7 +132,7 @@ def get_position_hand_range(game_type: GameType, position, blinds):
 
 
 def build_position_hand_ranges(game_type: GameType):
-    blinds = [10, 30, 80]
+    blinds = [stack.value for stack in StackSize]
     for blind in blinds:
         for position in GAME_TYPE_POSITIONS[game_type]:
             get_position_hand_range(game_type, position, blind)

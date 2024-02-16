@@ -1,4 +1,5 @@
 import os
+import time
 from enums.Card import Card
 from enums.GameType import GameType
 from enums.Hand import Hand
@@ -20,7 +21,7 @@ from utils.PrettyTable import PrettyTable
 
 class PostFlopEvaluation:
     def __init__(self, hand: Hand, table_cards: List[Card], state: GameState):
-        num_players = len(state.opponent_positions) + 1
+        num_players = len(state.opponents) + 1
         evaluation = Evaluation(hand, table_cards, num_players)
         self.evaluations = {
             name: evaluation.weighted_evaluation(probs) for name, probs in self.get_hand_probabilities(state).items()}
@@ -36,12 +37,26 @@ class PostFlopEvaluation:
         return str(table)
 
     def get_hand_probabilities(self, state: GameState):
-        def load_probability(blinds, position):
+        def get_gto_probability(blinds, position):
             file_name = f"{state.game_type.get_num_players()}_{blinds}_{position.value}_{STARTING_HAND_PROBS}"
             path = os.path.join(BASE_STARTING_HAND_DIR, file_name)
             return np.load(path)
 
-        probs = {f"{blinds}BB": [load_probability(blinds, position) for position in state.opponent_positions]
-                 for blinds in [10, 30, 80]}
+        def get_range_probabilities(range):
+            num_hands = 52*51
+            probs = np.zeros((num_hands,))
+
+            if range == 0:
+                range = int(num_hands * 0.2)
+            else:
+                range = int(num_hands * range / 100)
+            probs[:range] = 1
+
+            return probs
+
+        probs = {
+            "GTO": [get_gto_probability(player.stack_size.value, player.position) for player in state.opponents],
+            "Range": [get_range_probabilities(player.range) for player in state.opponents]
+        }
 
         return probs

@@ -6,21 +6,23 @@ from time import sleep
 import msvcrt
 
 GAME_TYPE = GameType.EightPlayer
-AVAILABLE_BLINDS = [10, 12, 15, 20, 30, 40, 60, 80]
-SAVE_SCREENSHOTS = True
+SAVE_SCREENSHOTS = False
 
 
 def check_change_blinds():
     input = ""
     while msvcrt.kbhit():
         input += msvcrt.getwch()
+        sleep(0.5)
+
+    if input is None:
+        return input
 
     if len(input) < 3:
         return None
 
     if input[0] != "b":
         return None
-
     return int(input[1:])
 
 
@@ -38,7 +40,7 @@ def run():
 
         try:
             new_blinds = check_change_blinds()
-            if new_blinds in AVAILABLE_BLINDS:
+            if new_blinds is not None:
                 print(f"Changing blinds to {new_blinds}")
                 state_provider.set_blinds(new_blinds)
 

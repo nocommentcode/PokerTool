@@ -1,13 +1,18 @@
+import time
 import uuid
+
+import numpy as np
 from data import UN_CLASSIFIED_DIR
 from enums.GameStage import GameStage
 from enums.GameType import GameType
 from enums.PokerTargetType import PLAYER_CARDS, TABLE_CARDS
 from enums.Position import GAME_TYPE_POSITIONS
+from enums.StackSize import StackSize
 from networks.PokerNetwork import PokerNetwork
 from networks.StateDetector import StateDetector
 from poker.FoldedGameState import FoldedGameState
 from poker.GameState import GameState
+from poker.Player import Player
 from poker.PostFlopGameState import PostFlopGameState
 from poker.PreFlopGameState import PreFlopGameState
 from data.img_transformers import table_transformer, cards_transformer
@@ -27,42 +32,40 @@ class StateProvider:
         self.model = model
         self.current_state = None
         self.game_type = game_type
-        self.blinds = 80
-        self.load_gto_ranges()
+        self.blinds = 100
+        self.load_gto_ranges(StackSize.Eighty)
 
-    def load_gto_ranges(self):
+    def load_gto_ranges(self, player_stack: StackSize):
         self.pre_flop_charts = {
-            position: GTOPreflopRange(self.game_type, self.blinds, position) for position in GAME_TYPE_POSITIONS[self.game_type]
+            position: GTOPreflopRange(self.game_type, player_stack.value, position) for position in GAME_TYPE_POSITIONS[self.game_type]
         }
 
     def set_blinds(self, blinds):
         self.blinds = blinds
-        self.load_gto_ranges()
         self.current_state = None
         self.tick()
 
     def take_screenshot(self):
         # return pyautogui.screenshot()
-
-        from data import CLASSIFIED_DIR, UN_CLASSIFIED_DIR
-        from PIL.Image import open as open_image
-        import os
-        return open_image(os.path.join(CLASSIFIED_DIR, "3d49c957-4769-403b-aa38-338ce354818b", 'image.png'))
+        from PIL.Image import open as openimage
+        return openimage("images/unclassified_images/df92cb62-d85b-479f-8b4e-30be9b5d64f3.png")
 
     def get_screenshot_and_state(self):
         screenshot = self.take_screenshot()
-        state = self.state_detector.get_state(screenshot)
-        return state, screenshot
+        player_count, table_count, dealer_pos, opponents = self.state_detector.predict(
+            screenshot)
+        return GameState(self.game_type, self.blinds, player_count, table_count, dealer_pos, opponents, screenshot)
 
     def get_next_state_consensus(self):
-        state, _ = self.get_screenshot_and_state()
+        state = self.get_screenshot_and_state()
         sleep(0.1)
-        validation_state, screenshot = self.get_screenshot_and_state()
+        validation_state = self.get_screenshot_and_state()
 
         if state != validation_state:
             return self.get_next_state_consensus()
 
-        return validation_state, screenshot
+        state.parse_players(self.current_state)
+        return state
 
     def get_cards(self, screenshot, get_player_cards=True, get_table_cards=True):
         transformed = cards_transformer(screenshot)
@@ -83,8 +86,7 @@ class StateProvider:
 
         return player_cards, table_cards
 
-    def get_game_state(self, game_state: GameState, screenshot: Image):
-
+    def get_game_state(self, game_state: GameState):
         base_args = (self.game_type, game_state, self.blinds)
 
         if game_state.game_stage == GameStage.FOLDED:
@@ -92,25 +94,28 @@ class StateProvider:
 
         elif game_state.game_stage == GameStage.PREFLOP:
             player_cards, _ = self.get_cards(
-                screenshot, get_player_cards=True, get_table_cards=False)
+                game_state.screenshot, get_player_cards=True, get_table_cards=False)
 
-            return PreFlopGameState(*base_args, player_cards, self.pre_flop_charts[game_state.position])
+            return PreFlopGameState(*base_args, player_cards, self.pre_flop_charts[game_state.player.position])
 
         player_cards, table_cards = self.get_cards(
-            screenshot, get_player_cards=True, get_table_cards=True)
+            game_state.screenshot, get_player_cards=True, get_table_cards=True)
         table_cards = table_cards[:game_state.table_card_count]
         return PostFlopGameState(*base_args, player_cards, table_cards)
 
     def tick(self, save_screenshots=False):
-        next_state, screenshot = self.get_next_state_consensus()
+        next_state = self.get_next_state_consensus()
 
         if save_screenshots and self.should_save_screenshot(next_state):
             print(f"Saved screenshot")
-            self.save_screenshot(screenshot)
+            self.save_screenshot(next_state.screenshot)
+
+        if self.current_state is None or self.current_state.player.stack_size != next_state.player.stack_size:
+            self.load_gto_ranges(next_state.player.stack_size)
 
         if self.current_state != next_state:
             if self.should_refresh_ouput(next_state):
-                game_state = self.get_game_state(next_state, screenshot)
+                game_state = self.get_game_state(next_state)
                 print(str(game_state))
 
             self.current_state = next_state
@@ -143,11 +148,21 @@ class StateProvider:
         return True
 
     def print_for_screenshot_(self, screenshot, game_stages=[gs for gs in GameStage]):
-        state = self.state_detector.get_state(screenshot)
+        start = time.time()
+        player_count, table_count, dealer_pos, opponents = self.state_detector.predict(
+            screenshot)
+        state = GameState(self.game_type, self.blinds, player_count,
+                          table_count, dealer_pos, opponents, screenshot)
+
         if state.game_stage in game_stages:
-            print(str(self.get_game_state(state, screenshot)))
+            state.parse_players(self.current_state)
+            self.current_state = state
+
+            print(str(self.get_game_state(state)))
+            print(f"took: {str(time.time() - start)}")
             return True
 
+        self.current_state = state
         return False
 
     def save_screenshot(self, screenshot):

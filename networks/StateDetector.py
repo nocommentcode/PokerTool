@@ -79,7 +79,7 @@ class StateDetector(nn.Module):
         model.load_state_dict(state_dict, assign=True)
         return model
 
-    def get_state(self, screenshot) -> GameState:
+    def predict(self, screenshot):
         # to batch
         transformed = table_transformer(screenshot)
         batch = transformed.unsqueeze(0)
@@ -98,4 +98,4 @@ class StateDetector(nn.Module):
         opponents = [(sigmoid(opponent) > 0.5).item()
                      for opponent in opponents[0]]
 
-        return GameState(self.game_type, player_count.item(), table_count.item(), dealer_pos.item(), np.array(opponents))
+        return player_count.item(), table_count.item(), dealer_pos.item(), np.array(opponents)

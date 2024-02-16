@@ -83,6 +83,7 @@ class Deck:
         opponent_hands = np.zeros((self.num, 2, 0))
         used_indexes = np.zeros((self.num, 0))
         for probs in hand_probabilities:
+            # start = time.time()
             # remove probability of delt cards
             probs[delt_hand_indexes] = 0
             probs /= probs.sum()
@@ -92,18 +93,23 @@ class Deck:
             opponent_hand = hands[opponent_idx]
             opponent_hands = np.append(opponent_hands,
                                        opponent_hand[:, :, None], 2)
+            # print(f"opponent index: {str(time.time() - start)}")
 
             # remove indicies from hands
+            # start = time.time()
             clashing_indicies = hand_clashes[opponent_idx]
             used_indexes = np.append(
                 used_indexes, clashing_indicies,  1)
+            # print(f"remove from hands: {str(time.time() - start)}")
 
             # remove cards from deck
+            # start = time.time()
             opponent_hand_mask = np.logical_or(opponent_hand[:, 0][:, None] == self.deck,
                                                opponent_hand[:, 1][:, None] == self.deck)
             deck_mask = np.invert(opponent_hand_mask)
             deck = self.deck[deck_mask]
             self.deck = deck.reshape((self.num, -1))
+            # print(f"remove from deck: {str(time.time() - start)}")
 
         self.random_shuffle(len(hand_probabilities) + 1)
 
